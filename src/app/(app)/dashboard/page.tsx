@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentProfile, getOfficeDocuments } from "@/lib/data";
+import { getCurrentProfile, getOfficeDocuments, getSharesSharedWithMe } from "@/lib/data";
 import { trackDocument } from "../documents/actions";
 import { StatusBadge, DaysBadge } from "@/components/badges";
 
@@ -12,7 +12,11 @@ export default async function DashboardPage({
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const documents = await getOfficeDocuments(profile.org_unit_id);
+  const [documents, sharedWithMe] = await Promise.all([
+    getOfficeDocuments(profile.org_unit_id),
+    getSharesSharedWithMe(profile.id),
+  ]);
+  const unreadShares = sharedWithMe.filter((s) => !s.read_at);
 
   return (
     <div className="space-y-6">
@@ -34,6 +38,22 @@ export default async function DashboardPage({
           <p className="mt-2 text-sm text-red-600">No document found for &ldquo;{notfound}&rdquo;.</p>
         ) : null}
       </div>
+
+      {unreadShares.length > 0 ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <h2 className="mb-2 text-sm font-semibold text-slate-900">Shared with you</h2>
+          <ul className="space-y-1 text-sm">
+            {unreadShares.map((s) => (
+              <li key={s.id}>
+                <Link href={`/documents/${s.document_id}`} className="underline">
+                  {s.document?.reference_code} — {s.document?.title}
+                </Link>
+                {s.note ? <span className="text-slate-600"> — {s.note}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div>
         <h1 className="text-lg font-semibold text-slate-900">Documents currently in your office</h1>

@@ -144,3 +144,62 @@ export async function acknowledgeMovement(formData: FormData) {
   revalidatePath(`/documents/${documentId}`);
   redirect(`/documents/${documentId}`);
 }
+
+export async function addDocumentComment(formData: FormData) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Not authenticated");
+
+  const documentId = String(formData.get("document_id") ?? "");
+  const body = String(formData.get("body") ?? "").trim();
+  if (!documentId || !body) throw new Error("A comment body is required");
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("document_comments").insert({
+    document_id: documentId,
+    author_id: profile.id,
+    body,
+  });
+  if (error) throw error;
+
+  revalidatePath(`/documents/${documentId}`);
+  redirect(`/documents/${documentId}`);
+}
+
+export async function shareDocument(formData: FormData) {
+  const profile = await getCurrentProfile();
+  if (!profile) throw new Error("Not authenticated");
+
+  const documentId = String(formData.get("document_id") ?? "");
+  const sharedWithUserId = String(formData.get("shared_with_user_id") ?? "");
+  const note = String(formData.get("note") ?? "").trim() || null;
+  if (!documentId || !sharedWithUserId) throw new Error("Choose a colleague to share with");
+  if (sharedWithUserId === profile.id) throw new Error("Choose someone other than yourself");
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("document_shares").insert({
+    document_id: documentId,
+    shared_by: profile.id,
+    shared_with_user_id: sharedWithUserId,
+    note,
+  });
+  if (error) throw error;
+
+  revalidatePath(`/documents/${documentId}`);
+  redirect(`/documents/${documentId}`);
+}
+
+export async function markShareRead(formData: FormData) {
+  const shareId = String(formData.get("share_id") ?? "");
+  const documentId = String(formData.get("document_id") ?? "");
+  if (!shareId) throw new Error("Missing share");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("document_shares")
+    .update({ read_at: new Date().toISOString() })
+    .eq("id", shareId);
+  if (error) throw error;
+
+  revalidatePath(`/documents/${documentId}`);
+  revalidatePath("/dashboard");
+}

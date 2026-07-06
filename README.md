@@ -39,15 +39,23 @@ Storage).
 - Staff directory.
 - Full audit log (who did what, before/after) via database triggers,
   independent of the application code.
+- Staff communication: an auto-created channel per office/division/
+  directorate (membership follows the org hierarchy — a division head is in
+  every office channel beneath them) plus direct messages between any two
+  staff members.
+- Document sharing: flag a document to a colleague for input/visibility
+  without transferring custody (that's still a formal routing/movement), plus
+  a lightweight discussion thread on each document.
 
 Row Level Security enforces all of the above at the database layer — see
-`supabase/migrations/0007_rls_policies.sql`.
+`supabase/migrations/0007_rls_policies.sql` (core) and
+`supabase/migrations/0011_messaging.sql` / `0012_document_comments_and_shares.sql`.
 
 ## Not yet built
 
-Internal messaging / document-sharing collaboration module, and a public
-(non-staff) self-service tracker — currently visitors go through the registry
-by email, per the requirements this phase targeted.
+A public (non-staff) self-service tracker — visitors currently go through the
+registry by email, per the requirements this phase targeted. Reporting/
+analytics dashboards and SLA breach alerting are also not built yet.
 
 ## Regenerating types
 

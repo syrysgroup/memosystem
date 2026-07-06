@@ -1,9 +1,20 @@
 import { notFound } from "next/navigation";
-import { getAttachmentUrl, getCurrentProfile, getDocumentDetail, getOrgUnits } from "@/lib/data";
+import {
+  getAttachmentUrl,
+  getCurrentProfile,
+  getDocumentComments,
+  getDocumentDetail,
+  getDocumentShares,
+  getOrgUnits,
+  getStaffDirectory,
+} from "@/lib/data";
 import { StatusBadge, DaysBadge } from "@/components/badges";
 import {
   acknowledgeMovement,
+  addDocumentComment,
+  markShareRead,
   routeDocument,
+  shareDocument,
   updateDocumentStatus,
   uploadAttachment,
 } from "../actions";
@@ -19,8 +30,14 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
   const { document, movements, externalMeta, attachments } = await getDocumentDetail(id);
   if (!document) notFound();
 
-  const orgUnits = await getOrgUnits();
+  const [orgUnits, comments, shares, staff] = await Promise.all([
+    getOrgUnits(),
+    getDocumentComments(id),
+    getDocumentShares(id),
+    getStaffDirectory(),
+  ]);
   const canAct = document.current_org_unit_id === profile.org_unit_id && !profile.on_leave;
+  const staffById = new Map(staff.map((s) => [s.id, s]));
 
   const attachmentLinks = await Promise.all(
     attachments.map(async (a) => ({ ...a, url: await getAttachmentUrl(a.storage_path) }))
@@ -205,6 +222,83 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
             );
           })}
         </ol>
+      </div>
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+          <h2 className="text-sm font-semibold text-slate-900">Discussion</h2>
+          <div className="space-y-3">
+            {comments.length === 0 ? (
+              <p className="text-sm text-slate-400">No comments yet.</p>
+            ) : (
+              comments.map((c) => (
+                <div key={c.id} className="text-sm">
+                  <p className="font-medium text-slate-700">{staffById.get(c.author_id)?.full_name ?? "Unknown"}</p>
+                  <p className="text-slate-600">{c.body}</p>
+                  <p className="text-xs text-slate-400">{new Date(c.created_at).toLocaleString()}</p>
+                </div>
+              ))
+            )}
+          </div>
+          <form action={addDocumentComment} className="flex gap-2 border-t border-slate-100 pt-3">
+            <input type="hidden" name="document_id" value={document.id} />
+            <input name="body" required placeholder="Add a comment…" className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
+            <button type="submit" className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">
+              Post
+            </button>
+          </form>
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+          <h2 className="text-sm font-semibold text-slate-900">Share for input</h2>
+          <p className="text-xs text-slate-500">Flag this document to a colleague without moving custody.</p>
+          <form action={shareDocument} className="space-y-2 border-b border-slate-100 pb-3">
+            <input type="hidden" name="document_id" value={document.id} />
+            <select name="shared_with_user_id" required className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+              <option value="">Choose a colleague…</option>
+              {staff
+                .filter((s) => s.id !== profile.id)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.full_name}
+                  </option>
+                ))}
+            </select>
+            <input name="note" placeholder="Note (optional)" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+            <button type="submit" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700">
+              Share
+            </button>
+          </form>
+          <div className="space-y-2">
+            {shares.length === 0 ? (
+              <p className="text-sm text-slate-400">Not shared with anyone yet.</p>
+            ) : (
+              shares.map((s) => (
+                <div key={s.id} className="flex items-start justify-between text-sm">
+                  <div>
+                    <p className="text-slate-700">
+                      {staffById.get(s.shared_by)?.full_name} → {staffById.get(s.shared_with_user_id)?.full_name}
+                    </p>
+                    {s.note ? <p className="text-xs text-slate-500">{s.note}</p> : null}
+                  </div>
+                  {!s.read_at && s.shared_with_user_id === profile.id ? (
+                    <form action={markShareRead}>
+                      <input type="hidden" name="share_id" value={s.id} />
+                      <input type="hidden" name="document_id" value={document.id} />
+                      <button type="submit" className="text-xs font-medium text-slate-900 underline">
+                        Mark read
+                      </button>
+                    </form>
+                  ) : s.read_at ? (
+                    <span className="text-xs text-emerald-700">Read</span>
+                  ) : (
+                    <span className="text-xs text-slate-400">Unread</span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

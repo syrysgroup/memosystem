@@ -133,6 +133,33 @@ export type DocumentAttachment = {
   uploaded_at: string;
 };
 
+export type Message = {
+  id: string;
+  org_unit_id: string | null;
+  sender_id: string;
+  recipient_id: string | null;
+  body: string;
+  created_at: string;
+};
+
+export type DocumentComment = {
+  id: string;
+  document_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+};
+
+export type DocumentShare = {
+  id: string;
+  document_id: string;
+  shared_by: string;
+  shared_with_user_id: string;
+  note: string | null;
+  created_at: string;
+  read_at: string | null;
+};
+
 type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] };
 type View<Row> = { Row: Row; Relationships: [] };
 
@@ -147,6 +174,9 @@ export type Database = {
       document_movements: Table<DocumentMovement>;
       document_external_meta: Table<DocumentExternalMeta>;
       document_attachments: Table<DocumentAttachment>;
+      messages: Table<Message>;
+      document_comments: Table<DocumentComment>;
+      document_shares: Table<DocumentShare>;
     };
     Views: {
       documents_with_status: View<DocumentWithStatus>;

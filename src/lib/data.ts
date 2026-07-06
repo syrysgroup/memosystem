@@ -119,3 +119,89 @@ export async function getActiveDelegationsForUnits(orgUnitIds: string[]) {
   if (error) throw error;
   return data;
 }
+
+export async function getChannelOrgUnits(rootOrgUnitId: string) {
+  const supabase = await createClient();
+  const { data: descendants, error: descError } = await supabase.rpc("org_unit_descendants", {
+    root: rootOrgUnitId,
+  });
+  if (descError) throw descError;
+
+  const ids = (descendants ?? []).map((d: { id: string }) => d.id);
+  const { data, error } = await supabase.from("org_units").select("*").in("id", ids).order("name");
+  if (error) throw error;
+  return data;
+}
+
+export async function getOfficeMessages(orgUnitId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("org_unit_id", orgUnitId)
+    .order("created_at", { ascending: true })
+    .limit(200);
+  if (error) throw error;
+  return data;
+}
+
+export async function getDirectMessages(userId: string, otherUserId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .is("org_unit_id", null)
+    .or(
+      `and(sender_id.eq.${userId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${userId})`
+    )
+    .order("created_at", { ascending: true })
+    .limit(200);
+  if (error) throw error;
+  return data;
+}
+
+export async function getDocumentComments(documentId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("document_comments")
+    .select("*")
+    .eq("document_id", documentId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function getDocumentShares(documentId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("document_shares")
+    .select("*")
+    .eq("document_id", documentId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function getSharesSharedWithMe(userId: string) {
+  const supabase = await createClient();
+  const { data: shares, error } = await supabase
+    .from("document_shares")
+    .select("*")
+    .eq("shared_with_user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (error) throw error;
+  if (shares.length === 0) return [];
+
+  const { data: docs, error: docsError } = await supabase
+    .from("documents")
+    .select("id, reference_code, title")
+    .in(
+      "id",
+      shares.map((s) => s.document_id)
+    );
+  if (docsError) throw docsError;
+
+  const docsById = new Map(docs.map((d) => [d.id, d]));
+  return shares.map((s) => ({ ...s, document: docsById.get(s.document_id) }));
+}
