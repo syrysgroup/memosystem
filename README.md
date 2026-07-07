@@ -83,12 +83,20 @@ Revisit once that adapter catches up.
   to track.
 - **Requester tier mapping**: Head + Office Manager → senior; Staff → junior
   (confirmed).
-- A general staff chat/messaging platform is explicitly out of scope per the
-  spec (section 11) — not built.
 - A public (non-staff) self-service tracker isn't built; visitors go through
   Registry, who can decode a code's origin office
   (`decode_unique_code_origin`) without needing any access to the document
   itself.
+
+## Staff communication
+
+The spec (section 11) scopes a general chat platform out of the base system,
+but explicitly allows it "as its own system decision" — added on request. An
+implicit channel per org unit (membership = anyone currently holding a
+Position there, plus any current head/office_manager over it in the live
+organogram — the same live-query exception already used for reporting
+lines) plus direct messages between any two staff. Independent of the
+Document/Minute/Position model; nothing here affects document access rules.
 
 ## Verification status
 

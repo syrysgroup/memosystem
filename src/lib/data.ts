@@ -223,3 +223,43 @@ export async function getReportingLineDrilldown(rootOrgUnitId: string) {
   if (error) throw error;
   return data ?? [];
 }
+
+// Channels a profile currently belongs to: every org unit they hold a
+// current position in, plus (for head/office_manager positions) every
+// descendant org unit in the current organogram — mirrors is_channel_member.
+export async function getMyChannelOrgUnitIds(profileId: string) {
+  const positions = await getMyActivePositions(profileId);
+  const idSets = await Promise.all(
+    positions.map((p) =>
+      p.role === "head" || p.role === "office_manager" ? getOrgUnitDescendantIds(p.org_unit_id) : Promise.resolve([p.org_unit_id])
+    )
+  );
+  return [...new Set(idSets.flat())];
+}
+
+export async function getOfficeMessages(orgUnitId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("org_unit_id", orgUnitId)
+    .order("created_at", { ascending: true })
+    .limit(200);
+  if (error) throw error;
+  return data;
+}
+
+export async function getDirectMessages(userId: string, otherUserId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .is("org_unit_id", null)
+    .or(
+      `and(sender_id.eq.${userId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${userId})`
+    )
+    .order("created_at", { ascending: true })
+    .limit(200);
+  if (error) throw error;
+  return data;
+}

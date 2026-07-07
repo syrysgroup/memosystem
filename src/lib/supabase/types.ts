@@ -196,6 +196,15 @@ export type DocumentAttachment = {
   uploaded_at: string;
 };
 
+export type Message = {
+  id: string;
+  org_unit_id: string | null;
+  sender_id: string;
+  recipient_id: string | null;
+  body: string;
+  created_at: string;
+};
+
 export type AuditLogEntry = {
   id: string;
   user_id: string | null;
@@ -226,6 +235,7 @@ export type Database = {
       grants: Table<Grant>;
       document_attachments: Table<DocumentAttachment>;
       audit_log: Table<AuditLogEntry>;
+      messages: Table<Message>;
     };
     Views: {
       documents_with_status: View<DocumentWithStatus>;
