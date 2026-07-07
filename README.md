@@ -160,12 +160,29 @@ visibility, registry-gets-nothing-outside-its-own-chain, delegate read+write,
 active-vs-expired audit grants, Circular multi-approver + supersession,
 reporting-line aggregation) was exercised as the actual `authenticated`
 Postgres role, not superuser, then applied to the live Supabase project. The
-Next.js app builds/typechecks/lints clean. I could not run a live
-authenticated browser walkthrough from this environment — outbound HTTPS to
-the Supabase project host isn't in this sandbox's network allowlist (only the
-Supabase MCP channel is) — so the app→live-project wiring itself is unverified
-beyond "the anon key and URL are correctly read." Worth an end-to-end pass
-once you seed real data and run it from your own machine or a deploy preview.
+Next.js app builds/typechecks/lints clean.
+
+That local verification had a real gap, though: it never caught that the
+live project was missing the base table `GRANT`s (`SELECT`/`INSERT`/
+`UPDATE`/`DELETE`) to `authenticated` on every single table — RLS policies
+narrow access that's already granted, they don't grant it themselves, and
+apparently my local test setup had implicit grants that never made it into
+a versioned migration. The live project had *only*
+`REFERENCES`/`TRIGGER`/`TRUNCATE` for `authenticated` on every table
+(confirmed via `information_schema.role_table_grants`), so every table
+read/write 403'd from the moment the schema went live — sign-in itself
+"succeeded" (auth isn't gated by these grants) but nothing past it ever
+worked. Fixed in `0025_fix_missing_table_grants.sql`, and confirmed live via
+`set role authenticated; select count(*) from profiles;`. Lesson: verifying
+RLS logic in isolation isn't the same as verifying the live project can
+actually serve a request — check `information_schema.role_table_grants`
+against a deployed project too, not just RLS policy behavior locally.
+
+I still can't run a live authenticated *browser* walkthrough from this
+environment — outbound HTTPS to the Supabase project host isn't in this
+sandbox's network allowlist (only the Supabase MCP channel is) — so please
+do one end-to-end pass from your own machine or a deploy preview once this
+lands.
 
 ## Regenerating types
 
