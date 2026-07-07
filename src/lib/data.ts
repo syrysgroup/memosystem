@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Profile } from "@/lib/supabase/types";
+import type { Profile, Message } from "@/lib/supabase/types";
 
 export async function getCurrentProfile(): Promise<Profile | null> {
   const supabase = await createClient();
@@ -262,4 +262,42 @@ export async function getDirectMessages(userId: string, otherUserId: string) {
     .limit(200);
   if (error) throw error;
   return data;
+}
+
+// Latest message per office channel and per DM contact, for the WhatsApp-style
+// conversation list (preview text + recency sort). Reduced client-side since
+// PostgREST doesn't do "distinct on" via the JS client.
+export async function getConversationPreviews(profileId: string, channelOrgUnitIds: string[]) {
+  const supabase = await createClient();
+
+  const [{ data: channelMsgs, error: chErr }, { data: dmMsgs, error: dmErr }] = await Promise.all([
+    channelOrgUnitIds.length > 0
+      ? supabase
+          .from("messages")
+          .select("*")
+          .in("org_unit_id", channelOrgUnitIds)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from("messages")
+      .select("*")
+      .is("org_unit_id", null)
+      .or(`sender_id.eq.${profileId},recipient_id.eq.${profileId}`)
+      .order("created_at", { ascending: false }),
+  ]);
+  if (chErr) throw chErr;
+  if (dmErr) throw dmErr;
+
+  const channelPreview = new Map<string, Message>();
+  for (const m of channelMsgs ?? []) {
+    if (m.org_unit_id && !channelPreview.has(m.org_unit_id)) channelPreview.set(m.org_unit_id, m);
+  }
+
+  const dmPreview = new Map<string, Message>();
+  for (const m of dmMsgs ?? []) {
+    const otherId = m.sender_id === profileId ? m.recipient_id : m.sender_id;
+    if (otherId && !dmPreview.has(otherId)) dmPreview.set(otherId, m);
+  }
+
+  return { channelPreview, dmPreview };
 }
