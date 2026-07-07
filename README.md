@@ -184,6 +184,28 @@ service role (Supabase SQL editor/CLI/MCP), not through the app itself.
   just via a hidden button (verified live: `set role authenticated` +ing as
   the demo HR account, an `insert into grants` is rejected by RLS; the demo
   SG account, `is_security_admin` only, succeeds).
+- **Full-pass authorization audit (`0027_lock_privilege_escalation_holes.sql`)**:
+  a systematic pass over every server action's underlying RLS policy/trigger/
+  RPC — not just what the UI hides — found and fixed two real gaps that a
+  direct API/RPC call could exploit regardless of the UI:
+  - `profiles_update`'s RLS `with_check` (`id = auth.uid() OR
+    oversees_profile(id)`) had no column restriction, so any authenticated
+    user could `PATCH` their own profile row and set `is_admin` /
+    `is_org_admin` / `is_security_admin` / `is_active` to `true` directly —
+    full privilege escalation, confirmed live before the fix. Closed with a
+    `BEFORE UPDATE` trigger requiring the true bootstrap admin (`is_admin()`)
+    to touch any of those four columns, independent of who the row-level
+    policy otherwise lets update that row.
+  - `grant_auto_extend()` is `SECURITY DEFINER` and callable by any
+    authenticated user, but never checked the caller was the grant's own
+    grantee or a security admin — an unrelated staff account could extend a
+    stranger's audit grant by 30 days just by knowing its id, confirmed live
+    before the fix. Closed by adding that check inside the function.
+  Everything else audited in this pass (`documents` update/insert,
+  `minutes`, `messages`, `delegations`, `positions`, `org_units`,
+  `document_attachments` + its storage-bucket policy, `document_types`,
+  `grants` insert/select, `supersede_circular()`) was already correctly
+  enforced at the RLS/trigger/function level, not just hidden in the UI.
 
 ## Known simplifications vs. the spec
 
