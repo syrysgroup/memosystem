@@ -5,6 +5,13 @@ movement history, a registry module for incoming/outgoing letters, leave
 delegation, and an audit log. Next.js (App Router) + Supabase (Postgres, Auth,
 Storage).
 
+Pinned to Next.js 15 rather than 16: as of this writing, Next 16's Proxy
+(middleware) architecture always runs on the Node.js runtime, which the
+OpenNext Cloudflare Workers adapter doesn't support yet
+([cloudflare/workers-sdk#13755](https://github.com/cloudflare/workers-sdk/issues/13755)).
+Next 15's `middleware.ts` runs on the Edge runtime, which deploys cleanly.
+Revisit once that adapter catches up.
+
 ## Setup
 
 1. Create a Supabase project and copy its URL/anon key into `.env.local`
