@@ -5,8 +5,9 @@ export default async function AuditGrantsPage() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
+  const canManageGrants = profile.is_admin || profile.is_security_admin;
   const [myGrants, staff] = await Promise.all([getGrantsForGrantee(profile.id), getStaffDirectory()]);
-  const allGrants = profile.is_admin ? await getAllGrants() : [];
+  const allGrants = canManageGrants ? await getAllGrants() : [];
   const staffName = (id: string) => staff.find((s) => s.id === id)?.full_name ?? id;
 
   return (
@@ -20,7 +21,7 @@ export default async function AuditGrantsPage() {
         </p>
       </div>
 
-      {profile.is_admin ? (
+      {canManageGrants ? (
         <form action={issueGrant} className="space-y-3 rounded-lg border border-border bg-surface p-6">
           <h2 className="text-sm font-semibold text-ink">Issue a grant (as SG / admin)</h2>
           <select name="grantee_profile_id" required className="w-full rounded-md border border-border px-3 py-2 text-sm">
@@ -60,7 +61,7 @@ export default async function AuditGrantsPage() {
         )}
       </div>
 
-      {profile.is_admin ? (
+      {canManageGrants ? (
         <div className="rounded-lg border border-border bg-surface p-4">
           <h2 className="mb-3 text-sm font-semibold text-ink">All grants (admin)</h2>
           <GrantsTable grants={allGrants} staffName={staffName} showRevoke />

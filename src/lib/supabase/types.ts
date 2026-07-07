@@ -40,6 +40,8 @@ export type Profile = {
   full_name: string;
   email: string;
   is_admin: boolean;
+  is_org_admin: boolean;
+  is_security_admin: boolean;
   is_active: boolean;
   on_leave: boolean;
   leave_start: string | null;
@@ -53,6 +55,7 @@ export type OrgUnit = {
   parent_id: string | null;
   unit_type: OrgUnitType;
   name: string;
+  is_registry: boolean;
   effective_from: string;
   effective_to: string | null;
   superseded_by_id: string | null;

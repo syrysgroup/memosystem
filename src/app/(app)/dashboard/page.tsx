@@ -20,7 +20,9 @@ export default async function DashboardPage({
   ]);
   const orgUnitName = (id: string | null) => orgUnits.find((ou) => ou.id === id)?.name ?? "—";
   const overdueCount = documents.filter((d) => d.days_in_office !== null && d.days_in_office >= OVERDUE_THRESHOLD_DAYS).length;
-  const canManageTeam = positions.some((p) => p.role === "head" || p.role === "office_manager");
+  const canManageTeam =
+    positions.some((p) => p.role === "head" || p.role === "office_manager") || profile.is_org_admin || profile.is_admin;
+  const canIssueGrants = profile.is_security_admin || profile.is_admin;
   const decisionAuthorityPositions = positions.filter((p) => p.named_role);
 
   return (
@@ -35,6 +37,16 @@ export default async function DashboardPage({
           {profile.is_admin ? (
             <span className="rounded-full bg-ecowas-green-tint px-3 py-1 text-xs font-semibold text-ecowas-green">
               Administrator
+            </span>
+          ) : null}
+          {profile.is_org_admin ? (
+            <span className="rounded-full bg-ecowas-ocean-blue/15 px-3 py-1 text-xs font-semibold text-ecowas-ocean-blue">
+              Org Admin
+            </span>
+          ) : null}
+          {profile.is_security_admin ? (
+            <span className="rounded-full bg-ecowas-deep-red/15 px-3 py-1 text-xs font-semibold text-ecowas-deep-red">
+              Security Admin
             </span>
           ) : null}
           {positions.map((p) => (
@@ -71,14 +83,14 @@ export default async function DashboardPage({
           </p>
         ) : null}
 
-        {(profile.is_admin || canManageTeam) && (
+        {(canManageTeam || canIssueGrants) && (
           <div className="mt-3 flex flex-wrap gap-3 text-sm">
             {canManageTeam ? (
               <Link href="/team" className="font-medium text-ecowas-green hover:text-ecowas-green-dark">
                 Manage my team &rarr;
               </Link>
             ) : null}
-            {profile.is_admin ? (
+            {canIssueGrants ? (
               <Link href="/audit-grants" className="font-medium text-ecowas-green hover:text-ecowas-green-dark">
                 Issue an audit grant &rarr;
               </Link>

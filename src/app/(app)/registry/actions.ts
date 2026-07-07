@@ -3,7 +3,22 @@
 import { randomUUID } from "crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/data";
+import { getCurrentProfile, decodeUniqueCodeOrigin } from "@/lib/data";
+
+// Prefix-only lookup: decode_unique_code_origin() reads prefix_decode_table
+// directly and never touches documents (see the function in
+// 0013_functions_access.sql) — this is the only server-side call this action
+// makes, so there is no path for it to return anything beyond the office
+// name, regardless of what the UI renders.
+export async function decodeOrigin(formData: FormData) {
+  const code = String(formData.get("decode_code") ?? "").trim();
+  if (!code) redirect("/registry");
+
+  const officeName = await decodeUniqueCodeOrigin(code);
+  const params = new URLSearchParams({ decode_code: code });
+  if (officeName) params.set("decoded", officeName);
+  redirect(`/registry?${params.toString()}`);
+}
 
 export async function logIncomingLetter(formData: FormData) {
   const profile = await getCurrentProfile();

@@ -20,19 +20,19 @@ export default async function TeamPage() {
     getStaffDirectory(),
   ]);
 
-  const overseeingPositions = profile.is_admin
+  const overseeingPositions = (profile.is_admin || profile.is_org_admin)
     ? myPositions
     : myPositions.filter((p) => p.role === "head" || p.role === "office_manager");
 
   let scopeOrgUnitIds: string[];
-  if (profile.is_admin) {
+  if ((profile.is_admin || profile.is_org_admin)) {
     scopeOrgUnitIds = orgUnits.map((ou) => ou.id);
   } else {
     const scopeSets = await Promise.all(overseeingPositions.map((p) => getOrgUnitDescendantIds(p.org_unit_id)));
     scopeOrgUnitIds = [...new Set(scopeSets.flat())];
   }
 
-  const canManage = profile.is_admin || overseeingPositions.length > 0;
+  const canManage = (profile.is_admin || profile.is_org_admin) || overseeingPositions.length > 0;
   const positions = canManage ? await getActivePositionsForOrgUnits(scopeOrgUnitIds) : [];
   const delegations = canManage ? await getActiveDelegationsForPositions(positions.map((p) => p.id)) : [];
 
@@ -202,7 +202,7 @@ export default async function TeamPage() {
         )}
       </div>
 
-      <AllPositionsHint isAdmin={profile.is_admin} />
+      <AllPositionsHint isAdmin={(profile.is_admin || profile.is_org_admin)} />
     </div>
   );
 }

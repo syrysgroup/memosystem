@@ -110,37 +110,53 @@ service role (Supabase SQL editor/CLI/MCP), not through the app itself.
   participant (movement handler, minute author, or *senior*-tier originator);
   a junior-tier originator gets `decision_summary`/`decision_number` on the
   document but never minute content.
-- **Registry**: has no schema-level special status — any office's Positions
-  can log external correspondence, but in practice only Registry staff do.
-  Registry naturally has zero visibility into documents it never touched,
-  since access follows the routing chain, not the office.
+- **Registry**: `org_units.is_registry` flags which offices count as
+  Registry. Originating an external-correspondence `document_type`
+  (Incoming/Outgoing Letter, `is_external_correspondence`) is rejected at the
+  `prepare_new_document()` trigger level for any position outside a
+  Registry-flagged unit — not just hidden from the UI. Registry naturally
+  has zero visibility into documents it never touched, since access follows
+  the routing chain, not the office. A separate, always-available "decode a
+  code's origin office" tool (`decode_unique_code_origin()`) queries
+  `prefix_decode_table` directly and never joins `documents` — it can only
+  ever return an office name, nothing about the document itself.
 - **ReportingRole vs. AuditGrant**: reporting-line heads get aggregate,
   bucketed counts only (`reporting_line_summary`) plus a deliberately broader
   drill-down (`reporting_line_drilldown`: subject + offices, still no
-  minutes) — never raw row access. AuditGrants are temporary, admin/SG-issued,
-  full-access, hard-cutoff-on-expiry (every read re-checks `now()` against
-  `expires_at`), capped at 90 cumulative days via 30-day auto-extensions.
+  minutes) — never raw row access. AuditGrants are temporary,
+  security-admin/SG-issued, full-access, hard-cutoff-on-expiry (every read
+  re-checks `now()` against `expires_at`), capped at 90 cumulative days via
+  30-day auto-extensions.
 - **Circulars**: SG / Director Admin & Finance / Head of HR are each
   independently empowered to decide one (`positions.named_role` +
   `document_types.decision_authority_role`); once decided, no peer can
   override — only the SG can *supersede* (`supersede_circular()`), which is
   additive (the original decision stays visible, marked superseded) and never
   rewrites the decision itself.
+- **org_admin vs. security_admin**: `profiles.is_admin` is the bootstrap
+  superadmin (bypasses everything, folded into both narrower checks below so
+  the first admin is never locked out). Two independent, RLS-enforced claims
+  narrow that down for real delegation: `is_org_admin` (org units, positions
+  org-wide, document types — minus `decision_authority_role`) and
+  `is_security_admin` (audit grant issuance/visibility, audit log,
+  `positions.named_role`, `document_types.decision_authority_role`, Circular
+  supersession). These are checked in the RLS policies and triggers
+  themselves (`is_org_admin()`/`is_security_admin()` SQL functions) — an
+  org_admin genuinely cannot issue an audit grant via a direct API call, not
+  just via a hidden button (verified live: `set role authenticated` +ing as
+  the demo HR account, an `insert into grants` is rejected by RLS; the demo
+  SG account, `is_security_admin` only, succeeds).
 
 ## Known simplifications vs. the spec
 
-- **"SG" identification**: grant issuance is admin-gated in this build rather
-  than resolving a specific SG Position automatically. Circular
-  decision/supersession authority does correctly use `positions.named_role`.
 - **Grant expiry mid-session**: hard cutoff, by design (confirmed) — RLS
   re-evaluates on every read, so there's no separate soft-cutoff session state
   to track.
 - **Requester tier mapping**: Head + Office Manager → senior; Staff → junior
   (confirmed).
 - A public (non-staff) self-service tracker isn't built; visitors go through
-  Registry, who can decode a code's origin office
-  (`decode_unique_code_origin`) without needing any access to the document
-  itself.
+  Registry's "look up a document" tool, which is access-gated like any other
+  document read.
 
 ## Staff communication
 

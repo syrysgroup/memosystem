@@ -17,7 +17,7 @@ export default async function ReportsPage({
   if (!profile) return null;
 
   const [myPositions, orgUnits] = await Promise.all([getMyActivePositions(profile.id), getOrgUnits()]);
-  const overseeableOrgUnits = profile.is_admin
+  const overseeableOrgUnits = profile.is_admin || profile.is_org_admin
     ? orgUnits
     : orgUnits.filter((ou) => myPositions.some((p) => p.org_unit_id === ou.id && (p.role === "head" || p.role === "office_manager")));
 
