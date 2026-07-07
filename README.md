@@ -53,6 +53,10 @@ Revisit once that adapter catches up.
 - Document sharing: flag a document to a colleague for input/visibility
   without transferring custody (that's still a formal routing/movement), plus
   a lightweight discussion thread on each document.
+- Reports dashboard: status breakdown, an overdue list (&ge; 5 days in the
+  current office), and average days-in-office per office — scoped to what
+  the viewer can already see (their office and everything beneath it, or
+  everything for admins), no separate permission model needed.
 
 Row Level Security enforces all of the above at the database layer — see
 `supabase/migrations/0007_rls_policies.sql` (core) and
@@ -61,8 +65,7 @@ Row Level Security enforces all of the above at the database layer — see
 ## Not yet built
 
 A public (non-staff) self-service tracker — visitors currently go through the
-registry by email, per the requirements this phase targeted. Reporting/
-analytics dashboards and SLA breach alerting are also not built yet.
+registry by email, per the requirements this phase targeted.
 
 ## Regenerating types
 

@@ -1,5 +1,7 @@
 import type { DocumentStatus } from "@/lib/supabase/types";
 
+export const OVERDUE_THRESHOLD_DAYS = 5;
+
 const STATUS_STYLES: Record<DocumentStatus, string> = {
   draft: "bg-slate-100 text-slate-600",
   pending: "bg-amber-100 text-amber-800",
@@ -30,7 +32,7 @@ export function StatusBadge({ status }: { status: DocumentStatus }) {
 
 export function DaysBadge({ days }: { days: number | null }) {
   if (days === null) return <span className="text-slate-400">—</span>;
-  const overdue = days >= 5;
+  const overdue = days >= OVERDUE_THRESHOLD_DAYS;
   return (
     <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${overdue ? "bg-red-100 text-red-800" : "bg-slate-100 text-slate-600"}`}>
       {days} day{days === 1 ? "" : "s"}

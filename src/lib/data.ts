@@ -182,6 +182,19 @@ export async function getDocumentShares(documentId: string) {
   return data;
 }
 
+export async function getVisibleDocumentsForReports() {
+  // No org_unit_id filter: RLS (has_read_access) already scopes this to the
+  // viewer's own office + everything beneath it, or everything for admins.
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("documents_with_status")
+    .select("*")
+    .order("days_in_current_office", { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  return data;
+}
+
 export async function getSharesSharedWithMe(userId: string) {
   const supabase = await createClient();
   const { data: shares, error } = await supabase

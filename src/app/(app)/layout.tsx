@@ -18,6 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Link href="/documents/new">New Document</Link>
             <Link href="/registry">Registry</Link>
             <Link href="/messages">Messages</Link>
+            <Link href="/reports">Reports</Link>
             <Link href="/directory">Directory</Link>
             <Link href="/team">My Team</Link>
           </nav>
