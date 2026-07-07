@@ -50,10 +50,12 @@ Nov 2020):
 - **Logo**: `src/components/logo.tsx` pairs `public/brand/ecowas-badge.png`
   (the badge, cropped from the manual's own back-cover artwork — colour-
   matched to the documented CMYK/RGB/HEX values) with a real-text subline
-  ("ECOWAS COMMISSION / COMMISSION DE LA CEDEAO / COMISSÃO DA CEDEAO"), since
-  the manual requires the two never be separated. `middleware.ts` explicitly
-  excludes `/brand/*` from its auth check — otherwise the logo 404s on the
-  (unauthenticated) login page.
+  ("ECOWAS PARLIAMENT / PARLEMENT DE LA CEDEAO / PARLAMENTO DA CEDEAO" — this
+  deployment is for the ECOWAS Parliament, not the Commission the manual's
+  own sample lockup shows), since the manual requires badge and subline
+  never be separated. `middleware.ts` explicitly excludes `/brand/*` from
+  its auth check — otherwise the logo 404s on the (unauthenticated) login
+  page.
 - **Colours** (`src/app/globals.css` `@theme`): primary ECOWAS green
   `#008244` / yellow `#e4ca00` / brown `#ad4f2e`, plus the manual's secondary
   palette (light green, orange, deep red, sky blue, ocean blue, blue grey) —

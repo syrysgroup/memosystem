@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { signIn } from "./actions";
 import { Logo } from "@/components/logo";
 import { StripeBar } from "@/components/stripe-bar";
@@ -9,6 +9,15 @@ import { DEMO_ACCOUNTS } from "@/lib/demo-accounts";
 export default function LoginPage() {
   const [state, action, pending] = useActionState<{ error: string | null }, FormData>(signIn, { error: null });
   const [showDemo, setShowDemo] = useState(false);
+  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  function fillDemo(acct: { email: string; password: string }) {
+    if (emailRef.current) emailRef.current.value = acct.email;
+    if (passwordRef.current) passwordRef.current.value = acct.password;
+    setSelectedEmail(acct.email);
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-paper px-4 py-10">
@@ -31,6 +40,7 @@ export default function LoginPage() {
               name="email"
               type="email"
               required
+              ref={emailRef}
               className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-ecowas-green focus:outline-none"
             />
           </div>
@@ -44,6 +54,7 @@ export default function LoginPage() {
               name="password"
               type="password"
               required
+              ref={passwordRef}
               className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-ecowas-green focus:outline-none"
             />
           </div>
@@ -61,26 +72,40 @@ export default function LoginPage() {
       </div>
 
       {DEMO_ACCOUNTS.length > 0 ? (
-        <div className="w-full max-w-sm text-sm">
+        <div className="w-full max-w-md text-sm">
           <button
             type="button"
             onClick={() => setShowDemo((v) => !v)}
-            className="text-ecowas-green hover:text-ecowas-green-dark"
+            className="mx-auto block text-ecowas-green hover:text-ecowas-green-dark"
           >
             {showDemo ? "Hide demo accounts" : "Show demo accounts"}
           </button>
           {showDemo ? (
-            <ul className="mt-2 space-y-1.5 rounded-lg border border-border bg-surface p-3 text-xs text-ink-muted">
-              {DEMO_ACCOUNTS.map((acct) => (
-                <li key={acct.email} className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-ink">{acct.role}</span>
-                  <span className="font-mono">{acct.email}</span>
-                </li>
-              ))}
-              <li className="pt-1 text-ink">
-                Password for all demo accounts: <span className="font-mono font-medium">{DEMO_ACCOUNTS[0].password}</span>
-              </li>
-            </ul>
+            <div className="mt-3 space-y-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {DEMO_ACCOUNTS.map((acct) => {
+                  const selected = selectedEmail === acct.email;
+                  return (
+                    <button
+                      key={acct.email}
+                      type="button"
+                      onClick={() => fillDemo(acct)}
+                      className={`rounded-lg border p-3 text-left transition-colors ${
+                        selected
+                          ? "border-ecowas-green bg-ecowas-green-tint"
+                          : "border-border bg-surface hover:border-ecowas-green hover:bg-ecowas-green-tint"
+                      }`}
+                    >
+                      <div className="text-sm font-semibold text-ink">{acct.role}</div>
+                      <div className="mt-0.5 truncate font-mono text-xs text-ink-muted">{acct.email}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-center text-xs text-ink-muted">
+                Click a card to fill in its credentials, then press Sign in.
+              </p>
+            </div>
           ) : null}
         </div>
       ) : null}

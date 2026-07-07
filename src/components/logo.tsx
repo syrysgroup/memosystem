@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-const SUBLINE = ["ECOWAS COMMISSION", "COMMISSION DE LA CEDEAO", "COMISSÃO DA CEDEAO"];
+const SUBLINE = ["ECOWAS PARLIAMENT", "PARLEMENT DE LA CEDEAO", "PARLAMENTO DA CEDEAO"];
 
 /**
  * Reproduces the ECOWAS Corporate Design Manual's logo lockup: badge and
