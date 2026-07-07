@@ -31,6 +31,25 @@ export async function middleware(request: NextRequest) {
       data: { user: authUser },
     } = await supabase.auth.getUser();
     user = authUser;
+
+    // A Supabase session can be valid (getUser() succeeds) for an account
+    // with no matching `profiles` row — never provisioned, or an orphaned/
+    // stale session. Left unchecked this loops forever: this middleware
+    // sends an "authenticated" user away from /login to /dashboard, and the
+    // dashboard layout's own profile check sends a profile-less user right
+    // back to /login (ERR_TOO_MANY_REDIRECTS). Signing out here, on /login,
+    // breaks the cycle instead of just relocating it.
+    if (user && isAuthRoute) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!profile) {
+        await supabase.auth.signOut();
+        user = null;
+      }
+    }
   } catch (error) {
     // Misconfigured env vars or Supabase unreachable — fail safe to
     // "unauthenticated" instead of crashing the request with a 500. This is
