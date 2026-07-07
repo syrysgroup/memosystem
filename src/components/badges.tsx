@@ -1,3 +1,4 @@
+import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { DecisionStatus, DigitalStatus, PhysicalStatus, RequesterTier } from "@/lib/supabase/types";
 
 export const OVERDUE_THRESHOLD_DAYS = 5;
@@ -31,44 +32,40 @@ const DECISION_STYLES: Record<DecisionStatus, string> = {
   withdrawn: "bg-border/60 text-ink-muted",
 };
 
-function labelize(s: string) {
-  return s.replace(/_/g, " ");
-}
-
-export function DigitalStatusBadge({ status }: { status: DigitalStatus }) {
+export function DigitalStatusBadge({ status, labels }: { status: DigitalStatus; labels: Dictionary["badges"]["digital"] }) {
   return (
     <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${DIGITAL_STYLES[status]}`}>
-      {labelize(status)}
+      {labels[status]}
     </span>
   );
 }
 
-export function PhysicalStatusBadge({ status }: { status: PhysicalStatus }) {
+export function PhysicalStatusBadge({ status, labels }: { status: PhysicalStatus; labels: Dictionary["badges"]["physical"] }) {
   return (
     <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${PHYSICAL_STYLES[status]}`}>
-      {labelize(status)}
+      {labels[status]}
     </span>
   );
 }
 
-export function DecisionStatusBadge({ status }: { status: DecisionStatus }) {
+export function DecisionStatusBadge({ status, labels }: { status: DecisionStatus; labels: Dictionary["badges"]["decision"] }) {
   return (
     <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${DECISION_STYLES[status]}`}>
-      {labelize(status)}
+      {labels[status]}
     </span>
   );
 }
 
-export function TierBadge({ tier }: { tier: RequesterTier }) {
+export function TierBadge({ tier, labels }: { tier: RequesterTier; labels: Dictionary["badges"]["tier"] }) {
   return (
     <span className="inline-block rounded bg-ecowas-brown/15 px-2 py-0.5 text-xs font-medium text-ecowas-brown">
-      {labelize(tier)}
+      {labels[tier]}
     </span>
   );
 }
 
-export function DaysBadge({ days, label }: { days: number | null; label?: string }) {
-  if (days === null) return <span className="text-ink-muted">—</span>;
+export function DaysBadge({ days, label, dict }: { days: number | null; label?: string; dict: Dictionary }) {
+  if (days === null) return <span className="text-ink-muted">{dict.common.dash}</span>;
   const overdue = days >= OVERDUE_THRESHOLD_DAYS;
   return (
     <span
@@ -76,7 +73,7 @@ export function DaysBadge({ days, label }: { days: number | null; label?: string
         overdue ? "bg-ecowas-deep-red/15 text-ecowas-deep-red" : "bg-border/60 text-ink-muted"
       }`}
     >
-      {days} day{days === 1 ? "" : "s"}
+      {dict.badges.days(days)}
       {label ? ` ${label}` : ""}
     </span>
   );

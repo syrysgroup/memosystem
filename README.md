@@ -67,6 +67,44 @@ Nov 2020):
   card and the app header.
 - The logo may only sit on white or "ECOWAS yellow 12%" per the manual — the
   app's cream page background (`--color-paper`) *is* that 12% tint.
+- **Compliance note**: the badge currently shipped is a crop reproduced from
+  the design manual, colour-matched pixel-for-pixel. That is a reproduction
+  of ECOWAS's registered mark, which is a brand-authorization question, not
+  a design decision — do not treat it as cleared for anything beyond a local
+  demo until Communications/Legal at the institution signs off on using the
+  exact artwork in a live deployment. If you have the institution's actual
+  logo file, replace `public/brand/ecowas-badge.png` with it directly (via
+  the repo, not a pasted chat image, which this environment can't read back
+  as a file) once authorized.
+
+## Internationalization
+
+The app ships in the three official ECOWAS working languages — English,
+French, Portuguese:
+
+- Locale is stored in a `locale` cookie, read server-side in
+  `src/lib/i18n/get-dictionary.ts` (`getLocale()` / `getDictionary()`, marked
+  `import "server-only"`). Server Components fetch the dictionary directly;
+  Client Components that need translated strings receive the relevant slice
+  as a prop from their nearest Server Component ancestor.
+- Switching language is a `setLocale` Server Action
+  (`src/lib/i18n/actions.ts`) invoked from `<LanguageSwitcher />`
+  (`src/components/language-switcher.tsx`) via `useTransition` +
+  `router.refresh()` — it sets the cookie and re-renders in place, no route
+  change.
+- Dictionaries live in `src/lib/i18n/dictionaries/{en,fr,pt}.ts`, all
+  implementing the single `Dictionary` type in `src/lib/i18n/dictionary.ts`.
+  Institutional/administrative register throughout (e.g. "Autorisations
+  d'audit" / "Autorizações de Auditoria" for Audit Grants), not machine
+  translation.
+- Only pass narrow, string-only slices of the dictionary to Client
+  Components (e.g. `dict.login`, `dict.messages`) — several dictionary
+  sections (`badges.days`, `dashboard.scopeHead`, `reports.newlyInheritedNote`,
+  `team.institutionWideCount`) hold pluralization/interpolation functions,
+  and React will throw at runtime ("Functions cannot be passed directly to
+  Client Components") if the whole `Dictionary` crosses the server/client
+  boundary. `DaysBadge` and friends in `src/components/badges.tsx` are safe
+  because they're only ever rendered from Server Components.
 
 ## Demo accounts
 

@@ -12,24 +12,25 @@ import {
   IconTeam,
   IconShield,
 } from "@/components/icons";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
-const ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: IconDashboard },
-  { href: "/documents/new", label: "New Document", icon: IconDocumentPlus },
-  { href: "/registry", label: "Registry", icon: IconInbox },
-  { href: "/messages", label: "Messages", icon: IconChat },
-  { href: "/reports", label: "Reports", icon: IconChart },
-  { href: "/directory", label: "Directory", icon: IconUsers },
-  { href: "/team", label: "My Team", icon: IconTeam },
-  { href: "/audit-grants", label: "Audit Grants", icon: IconShield },
-];
-
-export function SidebarNav() {
+export function SidebarNav({ nav }: { nav: Dictionary["nav"] }) {
   const pathname = usePathname();
+
+  const items = [
+    { href: "/dashboard", label: nav.dashboard, icon: IconDashboard },
+    { href: "/documents/new", label: nav.newDocument, icon: IconDocumentPlus },
+    { href: "/registry", label: nav.registry, icon: IconInbox },
+    { href: "/messages", label: nav.messages, icon: IconChat },
+    { href: "/reports", label: nav.reports, icon: IconChart },
+    { href: "/directory", label: nav.directory, icon: IconUsers },
+    { href: "/team", label: nav.myTeam, icon: IconTeam },
+    { href: "/audit-grants", label: nav.auditGrants, icon: IconShield },
+  ];
 
   return (
     <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-      {ITEMS.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const active = href === "/dashboard" ? pathname === href : pathname.startsWith(href);
         return (
           <Link

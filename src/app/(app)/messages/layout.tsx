@@ -7,6 +7,7 @@ import {
   getConversationPreviews,
 } from "@/lib/data";
 import { ConversationList } from "@/components/conversation-list";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
 
 function formatPreviewTime(iso: string) {
   const d = new Date(iso);
@@ -21,6 +22,7 @@ export default async function MessagesLayout({ children }: { children: React.Rea
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
 
+  const dict = await getDictionary();
   const [channelIds, orgUnits, staff] = await Promise.all([
     getMyChannelOrgUnitIds(profile.id),
     getOrgUnits(),
@@ -58,7 +60,7 @@ export default async function MessagesLayout({ children }: { children: React.Rea
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden rounded-lg border border-border">
-      <ConversationList channels={channels} dms={dms} />
+      <ConversationList channels={channels} dms={dms} dict={dict.messages} />
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );

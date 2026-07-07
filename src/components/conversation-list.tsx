@@ -28,20 +28,22 @@ function Row({ href, name, preview, time, shape }: ConversationItem & { href: st
 export function ConversationList({
   channels,
   dms,
+  dict,
 }: {
   channels: ConversationItem[];
   dms: ConversationItem[];
+  dict: { title: string; officeChannels: string; directMessages: string };
 }) {
   return (
     <div className="flex h-full w-80 shrink-0 flex-col border-r border-border bg-surface">
       <div className="border-b border-border p-4">
-        <h1 className="text-lg font-semibold text-ink">Messages</h1>
+        <h1 className="text-lg font-semibold text-ink">{dict.title}</h1>
       </div>
       <div className="flex-1 overflow-y-auto">
         {channels.length > 0 ? (
           <div>
             <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              Office channels
+              {dict.officeChannels}
             </p>
             {channels.map((c) => (
               <Row key={c.id} href={`/messages/office/${c.id}`} shape="square" {...c} />
@@ -52,7 +54,7 @@ export function ConversationList({
         {dms.length > 0 ? (
           <div>
             <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              Direct messages
+              {dict.directMessages}
             </p>
             {dms.map((d) => (
               <Row key={d.id} href={`/messages/dm/${d.id}`} shape="circle" {...d} />

@@ -20,6 +20,9 @@ export function ChatPanel({
   hiddenFieldName,
   hiddenFieldValue,
   placeholder,
+  noMessagesYet,
+  unknownSender,
+  sendLabel,
 }: {
   title: string;
   avatarName?: string;
@@ -31,6 +34,9 @@ export function ChatPanel({
   hiddenFieldName: string;
   hiddenFieldValue: string;
   placeholder: string;
+  noMessagesYet: string;
+  unknownSender: string;
+  sendLabel: string;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -47,11 +53,11 @@ export function ChatPanel({
 
       <div className="flex-1 space-y-2 overflow-y-auto bg-paper px-4 py-4">
         {messages.length === 0 ? (
-          <p className="mt-8 text-center text-sm text-ink-muted">No messages yet — say hello.</p>
+          <p className="mt-8 text-center text-sm text-ink-muted">{noMessagesYet}</p>
         ) : (
           messages.map((m) => {
             const isMine = m.sender_id === currentUserId;
-            const senderName = staffById.get(m.sender_id)?.full_name ?? "Unknown";
+            const senderName = staffById.get(m.sender_id)?.full_name ?? unknownSender;
             return (
               <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                 <div
@@ -83,7 +89,7 @@ export function ChatPanel({
         />
         <button
           type="submit"
-          aria-label="Send"
+          aria-label={sendLabel}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ecowas-green text-white hover:bg-ecowas-green-dark"
         >
           <IconSend className="h-4 w-4" />

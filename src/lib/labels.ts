@@ -1,34 +1,37 @@
+import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { PositionRole } from "@/lib/supabase/types";
 
-export function roleLabel(role: PositionRole): string {
+export function roleLabel(role: PositionRole, dict: Dictionary): string {
   switch (role) {
     case "head":
-      return "Head";
+      return dict.dashboard.roleHead;
     case "office_manager":
-      return "Office Manager";
+      return dict.dashboard.roleOfficeManager;
     case "staff":
-      return "Staff";
+      return dict.dashboard.roleStaff;
   }
 }
 
-const NAMED_ROLE_LABELS: Record<string, string> = {
-  sg: "Secretary-General",
-  director_admin_finance: "Director, Admin & Finance",
-  head_hr: "Head of HR",
-};
-
-export function namedRoleLabel(namedRole: string | null): string | null {
-  if (!namedRole) return null;
-  return NAMED_ROLE_LABELS[namedRole] ?? namedRole;
+function namedRoleLabels(dict: Dictionary): Record<string, string> {
+  return {
+    sg: dict.dashboard.namedRoleSg,
+    director_admin_finance: dict.dashboard.namedRoleDirectorAdminFinance,
+    head_hr: dict.dashboard.namedRoleHeadHr,
+  };
 }
 
-export function scopeDescription(role: PositionRole, orgUnitName: string): string {
+export function namedRoleLabel(namedRole: string | null, dict: Dictionary): string | null {
+  if (!namedRole) return null;
+  return namedRoleLabels(dict)[namedRole] ?? namedRole;
+}
+
+export function scopeDescription(role: PositionRole, orgUnitName: string, dict: Dictionary): string {
   switch (role) {
     case "head":
-      return `You oversee ${orgUnitName} and everything beneath it in the organogram.`;
+      return dict.dashboard.scopeHead(orgUnitName);
     case "office_manager":
-      return `You manage day-to-day routing for ${orgUnitName}.`;
+      return dict.dashboard.scopeOfficeManager(orgUnitName);
     case "staff":
-      return `You handle documents assigned directly to your position at ${orgUnitName}.`;
+      return dict.dashboard.scopeStaff(orgUnitName);
   }
 }
