@@ -29,17 +29,25 @@ insert into prefix_decode_table (prefix, unit_name, org_unit_id) values
   ('CCD', 'Corporate Communication Division', 'a19fb1ec-3494-486d-8329-262b9ac492ef'),
   ('PMO', 'Press & Media Office', '0204440c-a660-4e6e-b146-111f2d9bfe1c');
 
+-- Every one of confirmation_token/recovery_token/email_change*/phone_change*/
+-- reauthentication_token must be '' rather than NULL: GoTrue's Go driver
+-- scans these as non-nullable strings, and a NULL crashes the /token
+-- (password grant) endpoint with "sql: Scan error ... converting NULL to
+-- string is unsupported" — a 500 whose near-empty body is what the app was
+-- displaying verbatim as "{}" before this was caught.
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-  raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+  confirmation_token, recovery_token, email_change, email_change_token_new,
+  email_change_token_current, phone_change, phone_change_token, reauthentication_token
 ) values
-  ('00000000-0000-0000-0000-000000000000', 'bcf1711b-06e6-4031-8137-bb81c377f34e', 'authenticated', 'authenticated', 'demo.admin@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), ''),
-  ('00000000-0000-0000-0000-000000000000', '4ec49df2-a7b2-4fc6-bd2c-aca1ef736207', 'authenticated', 'authenticated', 'demo.sg@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), ''),
-  ('00000000-0000-0000-0000-000000000000', '12c2a093-cc09-4d1f-a0e7-f1d3e1145f09', 'authenticated', 'authenticated', 'demo.finance@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), ''),
-  ('00000000-0000-0000-0000-000000000000', '05af06aa-4227-44dd-b4c0-d12ada6b25cb', 'authenticated', 'authenticated', 'demo.hr@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), ''),
-  ('00000000-0000-0000-0000-000000000000', '53c21cf5-f5f9-4c56-a79a-da6b32f60970', 'authenticated', 'authenticated', 'demo.commsmanager@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), ''),
-  ('00000000-0000-0000-0000-000000000000', '138fb3b9-8fe7-463a-8d58-b2b563ab43bf', 'authenticated', 'authenticated', 'demo.staff@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), ''),
-  ('00000000-0000-0000-0000-000000000000', '31046f6e-e84f-4f5b-bd2c-576622a6a330', 'authenticated', 'authenticated', 'demo.registry@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '');
+  ('00000000-0000-0000-0000-000000000000', 'bcf1711b-06e6-4031-8137-bb81c377f34e', 'authenticated', 'authenticated', 'demo.admin@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '4ec49df2-a7b2-4fc6-bd2c-aca1ef736207', 'authenticated', 'authenticated', 'demo.sg@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '12c2a093-cc09-4d1f-a0e7-f1d3e1145f09', 'authenticated', 'authenticated', 'demo.finance@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '05af06aa-4227-44dd-b4c0-d12ada6b25cb', 'authenticated', 'authenticated', 'demo.hr@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '53c21cf5-f5f9-4c56-a79a-da6b32f60970', 'authenticated', 'authenticated', 'demo.commsmanager@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '138fb3b9-8fe7-463a-8d58-b2b563ab43bf', 'authenticated', 'authenticated', 'demo.staff@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '31046f6e-e84f-4f5b-bd2c-576622a6a330', 'authenticated', 'authenticated', 'demo.registry@ecowas-demo.org', extensions.crypt('EcowasDemo#2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', '');
 
 insert into auth.identities (id, provider_id, user_id, identity_data, provider, created_at, updated_at, last_sign_in_at)
 select gen_random_uuid(), u.id::text, u.id,
