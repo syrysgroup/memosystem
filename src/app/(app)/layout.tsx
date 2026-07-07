@@ -17,10 +17,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Link>
             <Link href="/documents/new">New Document</Link>
             <Link href="/registry">Registry</Link>
-            <Link href="/messages">Messages</Link>
             <Link href="/reports">Reports</Link>
             <Link href="/directory">Directory</Link>
             <Link href="/team">My Team</Link>
+            <Link href="/audit-grants">Audit Grants</Link>
           </nav>
           <div className="flex items-center gap-4 text-sm text-slate-600">
             <span>

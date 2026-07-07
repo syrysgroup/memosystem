@@ -3,19 +3,47 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/data";
+import type { PositionRole } from "@/lib/supabase/types";
+
+export async function createPosition(formData: FormData) {
+  const orgUnitId = String(formData.get("org_unit_id") ?? "");
+  const profileId = String(formData.get("profile_id") ?? "");
+  const role = String(formData.get("role") ?? "") as PositionRole;
+  if (!orgUnitId || !profileId || !role) throw new Error("Office, person, and role are required");
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("positions").insert({ org_unit_id: orgUnitId, profile_id: profileId, role });
+  if (error) throw error;
+
+  revalidatePath("/team");
+}
+
+export async function endPosition(formData: FormData) {
+  const positionId = String(formData.get("position_id") ?? "");
+  if (!positionId) throw new Error("Missing position");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("positions")
+    .update({ end_date: new Date().toISOString().slice(0, 10) })
+    .eq("id", positionId);
+  if (error) throw error;
+
+  revalidatePath("/team");
+}
 
 export async function setLeaveStatus(formData: FormData) {
-  const userId = String(formData.get("user_id") ?? "");
+  const profileId = String(formData.get("profile_id") ?? "");
   const onLeave = formData.get("on_leave") === "on";
   const leaveStart = String(formData.get("leave_start") ?? "") || null;
   const leaveEnd = String(formData.get("leave_end") ?? "") || null;
-  if (!userId) throw new Error("Missing user");
+  if (!profileId) throw new Error("Missing profile");
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("profiles")
     .update({ on_leave: onLeave, leave_start: leaveStart, leave_end: leaveEnd })
-    .eq("id", userId);
+    .eq("id", profileId);
   if (error) throw error;
 
   revalidatePath("/team");
@@ -25,24 +53,19 @@ export async function assignDelegation(formData: FormData) {
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("Not authenticated");
 
-  const absentUserId = String(formData.get("absent_user_id") ?? "");
-  const delegateUserId = String(formData.get("delegate_user_id") ?? "");
-  const orgUnitId = String(formData.get("org_unit_id") ?? "");
+  const originalPositionId = String(formData.get("original_position_id") ?? "");
+  const delegatePositionId = String(formData.get("delegate_position_id") ?? "");
   const startDate = String(formData.get("start_date") ?? "");
   const endDate = String(formData.get("end_date") ?? "");
-
-  if (!absentUserId || !delegateUserId || !orgUnitId || !startDate || !endDate) {
+  if (!originalPositionId || !delegatePositionId || !startDate || !endDate) {
     throw new Error("All fields are required");
   }
-  if (absentUserId === delegateUserId) {
-    throw new Error("The delegate must be a different person");
-  }
+  if (originalPositionId === delegatePositionId) throw new Error("The delegate must be a different position");
 
   const supabase = await createClient();
   const { error } = await supabase.from("delegations").insert({
-    absent_user_id: absentUserId,
-    delegate_user_id: delegateUserId,
-    org_unit_id: orgUnitId,
+    original_position_id: originalPositionId,
+    delegate_position_id: delegatePositionId,
     start_date: startDate,
     end_date: endDate,
     created_by: profile.id,

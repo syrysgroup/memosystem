@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { getCurrentProfile, getOfficeDocuments, getSharesSharedWithMe } from "@/lib/data";
+import { getCurrentProfile, getMyActivePositions, getMyQueueDocuments, getOrgUnits } from "@/lib/data";
 import { trackDocument } from "../documents/actions";
-import { StatusBadge, DaysBadge } from "@/components/badges";
+import { DigitalStatusBadge, PhysicalStatusBadge, DecisionStatusBadge, DaysBadge } from "@/components/badges";
 
 export default async function DashboardPage({
   searchParams,
@@ -12,21 +12,22 @@ export default async function DashboardPage({
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const [documents, sharedWithMe] = await Promise.all([
-    getOfficeDocuments(profile.org_unit_id),
-    getSharesSharedWithMe(profile.id),
+  const positions = await getMyActivePositions(profile.id);
+  const [documents, orgUnits] = await Promise.all([
+    getMyQueueDocuments(positions.map((p) => p.id)),
+    getOrgUnits(),
   ]);
-  const unreadShares = sharedWithMe.filter((s) => !s.read_at);
+  const orgUnitName = (id: string | null) => orgUnits.find((ou) => ou.id === id)?.name ?? "—";
 
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-slate-200 bg-white p-4">
         <form action={trackDocument} className="flex items-end gap-3">
           <div className="flex-1">
-            <label className="text-sm font-medium text-slate-700">Track a document by reference code</label>
+            <label className="text-sm font-medium text-slate-700">Track a document by its unique code</label>
             <input
-              name="reference_code"
-              placeholder="e.g. MEMO/FINDIR/2026/0001"
+              name="unique_code"
+              placeholder="e.g. FIN-MEM-2026-0001"
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             />
           </div>
@@ -39,44 +40,37 @@ export default async function DashboardPage({
         ) : null}
       </div>
 
-      {unreadShares.length > 0 ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <h2 className="mb-2 text-sm font-semibold text-slate-900">Shared with you</h2>
-          <ul className="space-y-1 text-sm">
-            {unreadShares.map((s) => (
-              <li key={s.id}>
-                <Link href={`/documents/${s.document_id}`} className="underline">
-                  {s.document?.reference_code} — {s.document?.title}
-                </Link>
-                {s.note ? <span className="text-slate-600"> — {s.note}</span> : null}
-              </li>
-            ))}
-          </ul>
+      {positions.length === 0 ? (
+        <p className="text-sm text-amber-700">
+          You don&rsquo;t currently hold a Position in the organogram, so nothing can be assigned to you yet. Ask an admin
+          to create one for you under Directory/My Team.
+        </p>
+      ) : (
+        <div>
+          <h1 className="text-lg font-semibold text-slate-900">In your hands</h1>
+          <p className="text-sm text-slate-500">
+            Documents currently held by one of your positions: {positions.map((p) => orgUnitName(p.org_unit_id)).join(", ")}.
+          </p>
         </div>
-      ) : null}
-
-      <div>
-        <h1 className="text-lg font-semibold text-slate-900">Documents currently in your office</h1>
-        <p className="text-sm text-slate-500">Sorted by longest-waiting first.</p>
-      </div>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-slate-500">
             <tr>
-              <th className="px-4 py-2">Reference</th>
-              <th className="px-4 py-2">Title</th>
-              <th className="px-4 py-2">Type</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Days here</th>
-              <th className="px-4 py-2">Copy</th>
+              <th className="px-4 py-2">Code</th>
+              <th className="px-4 py-2">Subject</th>
+              <th className="px-4 py-2">Digital</th>
+              <th className="px-4 py-2">Physical</th>
+              <th className="px-4 py-2">Decision</th>
+              <th className="px-4 py-2">Days in office</th>
             </tr>
           </thead>
           <tbody>
             {documents.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
-                  No documents currently in your office.
+                  Nothing in your hands right now.
                 </td>
               </tr>
             ) : (
@@ -84,18 +78,22 @@ export default async function DashboardPage({
                 <tr key={doc.id} className="border-t border-slate-100 hover:bg-slate-50">
                   <td className="px-4 py-2 font-mono text-xs">
                     <Link href={`/documents/${doc.id}`} className="text-slate-900 underline-offset-2 hover:underline">
-                      {doc.reference_code}
+                      {doc.unique_code}
                     </Link>
                   </td>
-                  <td className="px-4 py-2">{doc.title}</td>
-                  <td className="px-4 py-2 text-slate-500">{doc.document_type_name}</td>
+                  <td className="px-4 py-2">{doc.subject}</td>
                   <td className="px-4 py-2">
-                    <StatusBadge status={doc.status} />
+                    <DigitalStatusBadge status={doc.digital_status} />
                   </td>
                   <td className="px-4 py-2">
-                    <DaysBadge days={doc.days_in_current_office} />
+                    <PhysicalStatusBadge status={doc.physical_status} />
                   </td>
-                  <td className="px-4 py-2 text-slate-500">{doc.has_physical_copy ? "Physical + Digital" : "Digital"}</td>
+                  <td className="px-4 py-2">
+                    <DecisionStatusBadge status={doc.decision_status} />
+                  </td>
+                  <td className="px-4 py-2">
+                    <DaysBadge days={doc.days_in_office} />
+                  </td>
                 </tr>
               ))
             )}

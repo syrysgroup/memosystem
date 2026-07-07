@@ -1,11 +1,11 @@
--- Immutable audit trail. Rows are written by triggers/functions only (see
--- 0006_functions.sql) — no insert/update/delete grants to app roles here,
--- so the only write path is through log_audit_event(), which always runs.
+-- Immutable audit trail. Only written via the audit_row_change() trigger
+-- function (0014_functions_actions.sql) — no direct insert/update/delete
+-- grants to app roles.
 create table audit_log (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references profiles (id),
-  acting_as_user_id uuid references profiles (id), -- set when a delegate performs the action for absent_user
-  action text not null, -- e.g. 'document.create', 'document.route', 'delegation.assign', 'auth.login'
+  acting_as_position_id uuid references positions (id), -- set when a delegate performs the action for an absent original position
+  action text not null,
   entity_type text not null,
   entity_id uuid,
   before jsonb,

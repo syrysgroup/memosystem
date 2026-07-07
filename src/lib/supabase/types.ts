@@ -1,6 +1,6 @@
 // Hand-written to match supabase/migrations/*.sql. Regenerate with
-// `supabase gen types typescript` once the project is linked, and this file
-// can be replaced by the generated output.
+// `supabase gen types typescript` once convenient, and this file can be
+// replaced by the generated output.
 //
 // Row shapes use `type` rather than `interface` deliberately: this Database
 // type is checked against @supabase/supabase-js's GenericSchema constraint,
@@ -8,39 +8,38 @@
 // `Record<string, unknown>` constraint in that generic position — only
 // closed object type aliases do.
 
-export type OrgUnitType = "directorate" | "division" | "office" | "unit";
-export type StaffRole = "staff" | "head" | "registry_officer" | "admin";
-export type DelegationStatus = "active" | "ended" | "revoked";
-export type DocumentStatus =
-  | "draft"
-  | "pending"
+export type OrgUnitType = "directorate" | "division" | "office";
+export type PositionRole = "head" | "office_manager" | "staff";
+export type DigitalStatus =
+  | "drafted"
+  | "in_transit"
+  | "at_office"
   | "under_review"
-  | "approved"
-  | "rejected"
-  | "dispatched"
-  | "closed";
-export type MovementMode = "digital" | "physical" | "both";
-export type AttachmentKind = "scan" | "acknowledgment" | "original" | "other";
-export type CorrespondenceChannel = "physical" | "email" | "fax" | "courier";
-export type CorrespondenceDirection = "incoming" | "outgoing";
-
-export type OrgUnit = {
-  id: string;
-  parent_id: string | null;
-  name: string;
-  unit_type: OrgUnitType;
-  code: string;
-  is_registry: boolean;
-  head_user_id: string | null;
-  created_at: string;
-};
+  | "minuted"
+  | "decided"
+  | "reassigned";
+export type PhysicalStatus = "not_dispatched" | "in_transit" | "delivered" | "delivery_failed";
+export type DecisionStatus = "open" | "pending_decision" | "approved" | "rejected" | "withdrawn";
+export type RequesterTier = "senior_originator" | "junior_originator";
+export type DeliveryFailureReason =
+  | "recipient_absent"
+  | "office_closed"
+  | "recipient_refused"
+  | "wrong_office"
+  | "document_damaged"
+  | "other";
+export type MovementChannel = "digital" | "physical";
+export type MovementCause = "normal" | "office_dissolved" | "decision_stamp";
+export type DeliveryOutcome = "delivered" | "failed";
+export type DelegationStatus = "active" | "ended" | "revoked";
+export type GrantStatus = "active" | "expired" | "revoked";
+export type AttachmentKind = "scan" | "acknowledgment" | "decision_stamp" | "other";
 
 export type Profile = {
   id: string;
   full_name: string;
   email: string;
-  org_unit_id: string;
-  role: StaffRole;
+  is_admin: boolean;
   is_active: boolean;
   on_leave: boolean;
   leave_start: string | null;
@@ -48,11 +47,120 @@ export type Profile = {
   created_at: string;
 };
 
+export type OrgUnit = {
+  id: string;
+  stable_key: string;
+  parent_id: string | null;
+  unit_type: OrgUnitType;
+  name: string;
+  effective_from: string;
+  effective_to: string | null;
+  superseded_by_id: string | null;
+  created_at: string;
+};
+
+export type PrefixDecodeEntry = {
+  id: string;
+  prefix: string;
+  unit_name: string;
+  org_unit_id: string | null;
+  effective_from: string;
+  effective_to: string | null;
+};
+
+export type Position = {
+  id: string;
+  org_unit_id: string;
+  profile_id: string;
+  role: PositionRole;
+  named_role: string | null;
+  start_date: string;
+  end_date: string | null;
+  created_at: string;
+};
+
+export type DocumentType = {
+  id: string;
+  name: string;
+  code: string;
+  routing_rule: Record<string, unknown>;
+  decision_authority_role: string[];
+  retention_period: string | null;
+  template: Record<string, string> | null;
+  physical_copy_required: boolean;
+  is_external_correspondence: boolean;
+  is_active: boolean;
+};
+
+export type DocumentRow = {
+  id: string;
+  unique_code: string;
+  document_type_id: string;
+  subject: string;
+  summary: string | null;
+  originating_position_id: string;
+  requester_tier: RequesterTier;
+  digital_status: DigitalStatus;
+  physical_status: PhysicalStatus;
+  decision_status: DecisionStatus;
+  decision_summary: string | null;
+  decision_number: string | null;
+  decided_at: string | null;
+  is_closed: boolean;
+  physical_failure_reason: DeliveryFailureReason | null;
+  physical_failure_note: string | null;
+  current_digital_custodian_id: string | null;
+  current_physical_custodian_id: string | null;
+  related_document_id: string | null;
+  relation_type: string | null;
+  superseded_at: string | null;
+  superseded_reason: string | null;
+  superseded_by_position_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DocumentWithStatus = DocumentRow & {
+  document_type_name: string;
+  document_type_code: string;
+  current_org_unit_id: string | null;
+  current_org_unit_name: string | null;
+  current_physical_org_unit_id: string | null;
+  current_physical_org_unit_name: string | null;
+  arrived_at_current_office: string | null;
+  days_in_office: number | null;
+  days_in_system: number | null;
+};
+
+export type MovementEvent = {
+  id: string;
+  document_id: string;
+  channel: MovementChannel;
+  from_position_id: string | null;
+  to_position_id: string;
+  occurred_at: string;
+  cause: MovementCause;
+  delivery_outcome: DeliveryOutcome | null;
+  failure_reason: DeliveryFailureReason | null;
+  failure_note: string | null;
+  resulting_digital_status: DigitalStatus | null;
+  resulting_physical_status: PhysicalStatus | null;
+  resulting_decision_status: DecisionStatus | null;
+  recorded_by: string | null;
+};
+
+export type Minute = {
+  id: string;
+  document_id: string;
+  author_position_id: string;
+  content: string;
+  created_at: string;
+};
+
 export type Delegation = {
   id: string;
-  absent_user_id: string;
-  delegate_user_id: string;
-  org_unit_id: string;
+  original_position_id: string;
+  delegate_position_id: string;
   start_date: string;
   end_date: string;
   status: DelegationStatus;
@@ -61,71 +169,26 @@ export type Delegation = {
   ended_at: string | null;
 };
 
-export type DocumentType = {
+export type Grant = {
   id: string;
-  name: string;
-  code_prefix: string;
-  is_external_correspondence: boolean;
-  is_active: boolean;
-};
-
-export type DocumentRow = {
-  id: string;
-  reference_code: string;
-  document_type_id: string;
-  title: string;
-  summary: string | null;
-  origin_org_unit_id: string;
-  current_org_unit_id: string;
-  current_custodian_id: string | null;
-  status: DocumentStatus;
-  has_physical_copy: boolean;
-  created_by: string;
+  grantor_position_id: string | null;
+  grantee_profile_id: string;
+  audit_period_start: string;
+  audit_period_end: string;
+  issued_at: string;
+  expires_at: string;
+  original_length_days: number;
+  total_extension_days: number;
+  status: GrantStatus;
+  reason: string | null;
+  issued_by: string;
   created_at: string;
-  updated_at: string;
-};
-
-export type DocumentWithStatus = DocumentRow & {
-  current_org_unit_name: string;
-  current_org_unit_code: string;
-  origin_org_unit_name: string;
-  document_type_name: string;
-  code_prefix: string;
-  last_moved_at: string | null;
-  days_in_current_office: number | null;
-};
-
-export type DocumentMovement = {
-  id: string;
-  document_id: string;
-  from_org_unit_id: string | null;
-  to_org_unit_id: string;
-  mode: MovementMode;
-  sent_by: string;
-  sent_at: string;
-  received_by: string | null;
-  received_at: string | null;
-  remarks: string | null;
-  action_taken: string | null;
-};
-
-export type DocumentExternalMeta = {
-  document_id: string;
-  direction: CorrespondenceDirection;
-  channel: CorrespondenceChannel;
-  correspondent_name: string | null;
-  correspondent_organization: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  external_reference_no: string | null;
-  dispatch_ack_received: boolean;
-  dispatch_ack_scan_path: string | null;
-  dispatch_ack_received_at: string | null;
 };
 
 export type DocumentAttachment = {
   id: string;
   document_id: string;
+  movement_event_id: string | null;
   storage_path: string;
   file_name: string;
   kind: AttachmentKind;
@@ -133,31 +196,16 @@ export type DocumentAttachment = {
   uploaded_at: string;
 };
 
-export type Message = {
+export type AuditLogEntry = {
   id: string;
-  org_unit_id: string | null;
-  sender_id: string;
-  recipient_id: string | null;
-  body: string;
+  user_id: string | null;
+  acting_as_position_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
   created_at: string;
-};
-
-export type DocumentComment = {
-  id: string;
-  document_id: string;
-  author_id: string;
-  body: string;
-  created_at: string;
-};
-
-export type DocumentShare = {
-  id: string;
-  document_id: string;
-  shared_by: string;
-  shared_with_user_id: string;
-  note: string | null;
-  created_at: string;
-  read_at: string | null;
 };
 
 type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] };
@@ -166,23 +214,44 @@ type View<Row> = { Row: Row; Relationships: [] };
 export type Database = {
   public: {
     Tables: {
-      org_units: Table<OrgUnit>;
       profiles: Table<Profile>;
-      delegations: Table<Delegation>;
+      org_units: Table<OrgUnit>;
+      prefix_decode_table: Table<PrefixDecodeEntry>;
+      positions: Table<Position>;
       document_types: Table<DocumentType>;
       documents: Table<DocumentRow>;
-      document_movements: Table<DocumentMovement>;
-      document_external_meta: Table<DocumentExternalMeta>;
+      movement_events: Table<MovementEvent>;
+      minutes: Table<Minute>;
+      delegations: Table<Delegation>;
+      grants: Table<Grant>;
       document_attachments: Table<DocumentAttachment>;
-      messages: Table<Message>;
-      document_comments: Table<DocumentComment>;
-      document_shares: Table<DocumentShare>;
+      audit_log: Table<AuditLogEntry>;
     };
     Views: {
       documents_with_status: View<DocumentWithStatus>;
     };
     Functions: {
       org_unit_descendants: { Args: { root: string }; Returns: { id: string }[] };
+      decode_unique_code_origin: { Args: { p_unique_code: string }; Returns: string };
+      supersede_circular: { Args: { p_document_id: string; p_reason: string }; Returns: DocumentRow };
+      grant_auto_extend: { Args: { p_grant_id: string }; Returns: Grant };
+      reporting_line_summary: {
+        Args: { root_org_unit_id: string };
+        Returns: { bucket: string; tag: string; newly_inherited: boolean; doc_count: number }[];
+      };
+      reporting_line_drilldown: {
+        Args: { root_org_unit_id: string };
+        Returns: {
+          document_id: string;
+          unique_code: string;
+          subject: string;
+          originating_office_name: string;
+          pending_office_name: string;
+          decision_pending: boolean;
+          delivery_outstanding: boolean;
+          days_in_office: number;
+        }[];
+      };
     };
   };
 };

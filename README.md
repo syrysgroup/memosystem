@@ -1,9 +1,12 @@
 # Memo & Document Tracking System
 
-Institutional memo, circular, and correspondence tracking with physical/digital
-movement history, a registry module for incoming/outgoing letters, leave
-delegation, and an audit log. Next.js (App Router) + Supabase (Postgres, Auth,
-Storage).
+Institutional document tracking built to a formal design specification
+(`memo_system_spec.docx`): versioned organogram, Position-based custody and
+delegation, three independent status axes (digital / physical / decision) per
+document, tiered minute visibility, registry-only-for-its-own-intake access,
+standing ReportingRole aggregates vs. temporary AuditGrants, and Circular-
+specific multi-approver rules. Next.js (App Router) + Supabase (Postgres,
+Auth, Storage).
 
 Pinned to Next.js 15 rather than 16: as of this writing, Next 16's Proxy
 (middleware) architecture always runs on the Node.js runtime, which the
@@ -14,62 +17,98 @@ Revisit once that adapter catches up.
 
 ## Setup
 
-1. Create a Supabase project and copy its URL/anon key into `.env.local`
-   (see `.env.local.example`).
+1. `.env.local` needs `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   for your Supabase project (see `.env.local.example`).
 2. Run the SQL files in `supabase/migrations/` against that project, in
-   filename order (via the Supabase SQL editor, the `supabase` CLI, or the
-   Supabase MCP `apply_migration` tool).
-3. Create at least one `org_units` row per real office/directorate/division,
-   and mark exactly one as the registry: `update org_units set is_registry =
-   true where code = '...'`.
-4. Create staff accounts in Supabase Auth, then insert a matching row in
-   `profiles` for each (id must match the `auth.users.id`), setting their
-   `org_unit_id` and `role` (`staff`, `head`, `registry_officer`, or `admin`).
-   The first admin has to be inserted directly — `profiles` insert is
-   otherwise admin-only.
-5. `npm install && npm run dev`.
+   filename order.
+3. Seed the organogram: insert `org_units` rows (directorate/division/office),
+   then `prefix_decode_table` rows mapping each origin office to its
+   unique_code prefix (e.g. "FIN" → Finance Directorate) — code minting fails
+   without one for the originating office.
+4. Create staff accounts in Supabase Auth, insert a matching `profiles` row
+   (id = `auth.users.id`), then give each person at least one `positions` row
+   (org_unit_id + role: `staff` / `office_manager` / `head`). A person's
+   *Position*, not their profile, is what documents are addressed to.
+5. To use Circular-specific approval (SG / Director Admin & Finance / Head of
+   HR) or audit grants, set `positions.named_role` (`'sg'`,
+   `'director_admin_finance'`, `'head_hr'`) on the relevant position — admin
+   only.
+6. The very first admin has to be inserted directly (`profiles.is_admin`);
+   after that, admins can manage everything through the app.
+7. `npm install && npm run dev`.
 
-## What's here (Phase 1: Foundation + Registry core)
+## Core model
 
-- Org hierarchy (directorate/division/office/unit), staff profiles, roles.
-- Documents with auto-generated reference codes (`PREFIX/ORGCODE/YEAR/SEQ`),
-  extensible document types (Memo, Circular, Report, Incoming/Outgoing Letter).
-- Movement tracking between offices (digital/physical/both), with days-in-
-  current-office computed live and a receipt-acknowledgment step for physical
-  copies.
-- Registry intake for incoming letters (with scan upload) and dispatch
-  acknowledgment recording for outgoing correspondence.
-- Track-by-reference-code lookup, so registry staff can answer a visitor's
-  email without walking to an office.
-- Leave → read-only access, with office-head-assigned delegation that grants
-  a stand-in write access for a date range.
-- Staff directory.
-- Full audit log (who did what, before/after) via database triggers,
-  independent of the application code.
-- Staff communication: an auto-created channel per office/division/
-  directorate (membership follows the org hierarchy — a division head is in
-  every office channel beneath them) plus direct messages between any two
-  staff members.
-- Document sharing: flag a document to a colleague for input/visibility
-  without transferring custody (that's still a formal routing/movement), plus
-  a lightweight discussion thread on each document.
-- Reports dashboard: status breakdown, an overdue list (&ge; 5 days in the
-  current office), and average days-in-office per office — scoped to what
-  the viewer can already see (their office and everything beneath it, or
-  everything for admins), no separate permission model needed.
+- **OrgUnit**: versioned, not live-edited — a reorg inserts a new row and
+  closes the old one (`effective_to`), so history never gets silently
+  repointed.
+- **Position**: role + person + org unit + time range. Custody, authorship,
+  and delegation all reference Positions, not people directly, so
+  reorganisations and staff turnover don't corrupt history.
+- **Document**: `unique_code` (immutable, `ORIGIN-DOCTYPE-YEAR-SEQ`),
+  `requester_tier` (senior/junior, computed from the originator's role — Head
+  and Office Manager are senior), and three independent status axes:
+  `digital_status`, `physical_status`, `decision_status`. `is_closed` is
+  computed, never set directly.
+- **MovementEvent**: append-only, entirely trigger-maintained history of both
+  custody tracks — the app only ever `UPDATE`s `documents`.
+- **Minute**: read access is permanent for anyone who was ever a real
+  participant (movement handler, minute author, or *senior*-tier originator);
+  a junior-tier originator gets `decision_summary`/`decision_number` on the
+  document but never minute content.
+- **Registry**: has no schema-level special status — any office's Positions
+  can log external correspondence, but in practice only Registry staff do.
+  Registry naturally has zero visibility into documents it never touched,
+  since access follows the routing chain, not the office.
+- **ReportingRole vs. AuditGrant**: reporting-line heads get aggregate,
+  bucketed counts only (`reporting_line_summary`) plus a deliberately broader
+  drill-down (`reporting_line_drilldown`: subject + offices, still no
+  minutes) — never raw row access. AuditGrants are temporary, admin/SG-issued,
+  full-access, hard-cutoff-on-expiry (every read re-checks `now()` against
+  `expires_at`), capped at 90 cumulative days via 30-day auto-extensions.
+- **Circulars**: SG / Director Admin & Finance / Head of HR are each
+  independently empowered to decide one (`positions.named_role` +
+  `document_types.decision_authority_role`); once decided, no peer can
+  override — only the SG can *supersede* (`supersede_circular()`), which is
+  additive (the original decision stays visible, marked superseded) and never
+  rewrites the decision itself.
 
-Row Level Security enforces all of the above at the database layer — see
-`supabase/migrations/0007_rls_policies.sql` (core) and
-`supabase/migrations/0011_messaging.sql` / `0012_document_comments_and_shares.sql`.
+## Known simplifications vs. the spec
 
-## Not yet built
+- **"SG" identification**: grant issuance is admin-gated in this build rather
+  than resolving a specific SG Position automatically. Circular
+  decision/supersession authority does correctly use `positions.named_role`.
+- **Grant expiry mid-session**: hard cutoff, by design (confirmed) — RLS
+  re-evaluates on every read, so there's no separate soft-cutoff session state
+  to track.
+- **Requester tier mapping**: Head + Office Manager → senior; Staff → junior
+  (confirmed).
+- A general staff chat/messaging platform is explicitly out of scope per the
+  spec (section 11) — not built.
+- A public (non-staff) self-service tracker isn't built; visitors go through
+  Registry, who can decode a code's origin office
+  (`decode_unique_code_origin`) without needing any access to the document
+  itself.
 
-A public (non-staff) self-service tracker — visitors currently go through the
-registry by email, per the requirements this phase targeted.
+## Verification status
+
+The schema (19 migrations + 3 follow-up hardening fixes) was verified against
+a local throwaway Postgres — every access rule (chain-based document/minute
+visibility, registry-gets-nothing-outside-its-own-chain, delegate read+write,
+active-vs-expired audit grants, Circular multi-approver + supersession,
+reporting-line aggregation) was exercised as the actual `authenticated`
+Postgres role, not superuser, then applied to the live Supabase project. The
+Next.js app builds/typechecks/lints clean. I could not run a live
+authenticated browser walkthrough from this environment — outbound HTTPS to
+the Supabase project host isn't in this sandbox's network allowlist (only the
+Supabase MCP channel is) — so the app→live-project wiring itself is unverified
+beyond "the anon key and URL are correctly read." Worth an end-to-end pass
+once you seed real data and run it from your own machine or a deploy preview.
 
 ## Regenerating types
 
-`src/lib/supabase/types.ts` is hand-written to match the migrations. Once the
-project is linked, replace it with `supabase gen types typescript`. Note: use
-`type`, not `interface`, for the row shapes — see the comment at the top of
-that file for why.
+`src/lib/supabase/types.ts` is hand-written to match the migrations. Note:
+row shapes use `type`, not `interface` — interfaces don't satisfy the
+`Record<string, unknown>` constraint `@supabase/supabase-js`'s generic schema
+checking needs, since they're open for declaration merging and closed type
+aliases aren't. See the comment at the top of that file.

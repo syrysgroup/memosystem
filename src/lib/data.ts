@@ -13,9 +13,22 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   return data;
 }
 
-export async function getOrgUnits() {
+export async function getMyActivePositions(profileId: string) {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("org_units").select("*").order("name");
+  const { data, error } = await supabase
+    .from("positions")
+    .select("*")
+    .eq("profile_id", profileId)
+    .is("end_date", null);
+  if (error) throw error;
+  return data;
+}
+
+export async function getOrgUnits(currentOnly = true) {
+  const supabase = await createClient();
+  let query = supabase.from("org_units").select("*").order("name");
+  if (currentOnly) query = query.is("effective_to", null);
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }
@@ -31,44 +44,53 @@ export async function getDocumentTypes() {
   return data;
 }
 
-export async function getOfficeDocuments(orgUnitId: string) {
+export async function getMyQueueDocuments(positionIds: string[]) {
+  if (positionIds.length === 0) return [];
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("documents_with_status")
     .select("*")
-    .eq("current_org_unit_id", orgUnitId)
-    .order("last_moved_at", { ascending: true });
+    .or(
+      `current_digital_custodian_id.in.(${positionIds.join(",")}),current_physical_custodian_id.in.(${positionIds.join(",")})`
+    )
+    .order("days_in_office", { ascending: false });
   if (error) throw error;
   return data;
 }
 
-export async function findDocumentByReferenceCode(referenceCode: string) {
+export async function findDocumentByCode(uniqueCode: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("documents_with_status")
     .select("*")
-    .eq("reference_code", referenceCode.trim())
+    .eq("unique_code", uniqueCode.trim())
     .maybeSingle();
   if (error) throw error;
   return data;
 }
 
+export async function decodeUniqueCodeOrigin(uniqueCode: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("decode_unique_code_origin", {
+    p_unique_code: uniqueCode.trim(),
+  });
+  if (error) throw error;
+  return data as string | null;
+}
+
 export async function getDocumentDetail(documentId: string) {
   const supabase = await createClient();
-  const [{ data: document, error: docError }, { data: movements, error: movError }, { data: externalMeta }, { data: attachments }] =
+  const [{ data: document, error: docError }, { data: movements, error: movError }, { data: minutes, error: minError }, { data: attachments }] =
     await Promise.all([
       supabase.from("documents_with_status").select("*").eq("id", documentId).single(),
-      supabase
-        .from("document_movements")
-        .select("*")
-        .eq("document_id", documentId)
-        .order("sent_at", { ascending: false }),
-      supabase.from("document_external_meta").select("*").eq("document_id", documentId).maybeSingle(),
+      supabase.from("movement_events").select("*").eq("document_id", documentId).order("occurred_at", { ascending: false }),
+      supabase.from("minutes").select("*").eq("document_id", documentId).order("created_at", { ascending: true }),
       supabase.from("document_attachments").select("*").eq("document_id", documentId).order("uploaded_at"),
     ]);
   if (docError) throw docError;
   if (movError) throw movError;
-  return { document, movements: movements ?? [], externalMeta, attachments: attachments ?? [] };
+  if (minError) throw minError;
+  return { document, movements: movements ?? [], minutes: minutes ?? [], attachments: attachments ?? [] };
 }
 
 export async function getAttachmentUrl(storagePath: string) {
@@ -91,130 +113,113 @@ export async function getStaffDirectory() {
   return data;
 }
 
-export async function getTeamMembers(rootOrgUnitId: string) {
+export async function getAllPositions() {
   const supabase = await createClient();
-  const { data: descendants, error: descError } = await supabase.rpc("org_unit_descendants", {
-    root: rootOrgUnitId,
-  });
-  if (descError) throw descError;
-
-  const ids = (descendants ?? []).map((d: { id: string }) => d.id);
   const { data, error } = await supabase
-    .from("profiles")
+    .from("positions")
     .select("*")
-    .in("org_unit_id", ids)
-    .order("full_name");
+    .order("start_date", { ascending: false });
   if (error) throw error;
   return data;
 }
 
-export async function getActiveDelegationsForUnits(orgUnitIds: string[]) {
+export async function getActivePositionsForOrgUnits(orgUnitIds: string[]) {
+  if (orgUnitIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("positions")
+    .select("*")
+    .in("org_unit_id", orgUnitIds)
+    .is("end_date", null);
+  if (error) throw error;
+  return data;
+}
+
+export async function getOrgUnitDescendantIds(rootOrgUnitId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("org_unit_descendants", { root: rootOrgUnitId });
+  if (error) throw error;
+  return (data ?? []).map((d) => d.id);
+}
+
+export async function getActiveDelegationsAsDelegate(delegatePositionIds: string[]) {
+  if (delegatePositionIds.length === 0) return [];
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("delegations")
     .select("*")
-    .in("org_unit_id", orgUnitIds)
+    .in("delegate_position_id", delegatePositionIds)
+    .eq("status", "active");
+  if (error) throw error;
+  return data;
+}
+
+export async function getPositionsByIds(positionIds: string[]) {
+  const ids = [...new Set(positionIds)].filter(Boolean);
+  if (ids.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("positions").select("*").in("id", ids);
+  if (error) throw error;
+  return data;
+}
+
+export async function getProfilesByIds(profileIds: string[]) {
+  const ids = [...new Set(profileIds)].filter(Boolean);
+  if (ids.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("profiles").select("*").in("id", ids);
+  if (error) throw error;
+  return data;
+}
+
+export async function getDocumentType(documentTypeId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("document_types").select("*").eq("id", documentTypeId).single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getActiveDelegationsForPositions(positionIds: string[]) {
+  if (positionIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("delegations")
+    .select("*")
+    .in("original_position_id", positionIds)
     .eq("status", "active")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data;
 }
 
-export async function getChannelOrgUnits(rootOrgUnitId: string) {
-  const supabase = await createClient();
-  const { data: descendants, error: descError } = await supabase.rpc("org_unit_descendants", {
-    root: rootOrgUnitId,
-  });
-  if (descError) throw descError;
-
-  const ids = (descendants ?? []).map((d: { id: string }) => d.id);
-  const { data, error } = await supabase.from("org_units").select("*").in("id", ids).order("name");
-  if (error) throw error;
-  return data;
-}
-
-export async function getOfficeMessages(orgUnitId: string) {
+export async function getGrantsForGrantee(profileId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("messages")
+    .from("grants")
     .select("*")
-    .eq("org_unit_id", orgUnitId)
-    .order("created_at", { ascending: true })
-    .limit(200);
-  if (error) throw error;
-  return data;
-}
-
-export async function getDirectMessages(userId: string, otherUserId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("messages")
-    .select("*")
-    .is("org_unit_id", null)
-    .or(
-      `and(sender_id.eq.${userId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${userId})`
-    )
-    .order("created_at", { ascending: true })
-    .limit(200);
-  if (error) throw error;
-  return data;
-}
-
-export async function getDocumentComments(documentId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("document_comments")
-    .select("*")
-    .eq("document_id", documentId)
-    .order("created_at", { ascending: true });
-  if (error) throw error;
-  return data;
-}
-
-export async function getDocumentShares(documentId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("document_shares")
-    .select("*")
-    .eq("document_id", documentId)
+    .eq("grantee_profile_id", profileId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data;
 }
 
-export async function getVisibleDocumentsForReports() {
-  // No org_unit_id filter: RLS (has_read_access) already scopes this to the
-  // viewer's own office + everything beneath it, or everything for admins.
+export async function getAllGrants() {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("documents_with_status")
-    .select("*")
-    .order("days_in_current_office", { ascending: false })
-    .limit(500);
+  const { data, error } = await supabase.from("grants").select("*").order("created_at", { ascending: false });
   if (error) throw error;
   return data;
 }
 
-export async function getSharesSharedWithMe(userId: string) {
+export async function getReportingLineSummary(rootOrgUnitId: string) {
   const supabase = await createClient();
-  const { data: shares, error } = await supabase
-    .from("document_shares")
-    .select("*")
-    .eq("shared_with_user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(20);
+  const { data, error } = await supabase.rpc("reporting_line_summary", { root_org_unit_id: rootOrgUnitId });
   if (error) throw error;
-  if (shares.length === 0) return [];
+  return data ?? [];
+}
 
-  const { data: docs, error: docsError } = await supabase
-    .from("documents")
-    .select("id, reference_code, title")
-    .in(
-      "id",
-      shares.map((s) => s.document_id)
-    );
-  if (docsError) throw docsError;
-
-  const docsById = new Map(docs.map((d) => [d.id, d]));
-  return shares.map((s) => ({ ...s, document: docsById.get(s.document_id) }));
+export async function getReportingLineDrilldown(rootOrgUnitId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("reporting_line_drilldown", { root_org_unit_id: rootOrgUnitId });
+  if (error) throw error;
+  return data ?? [];
 }
