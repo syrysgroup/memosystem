@@ -1,26 +1,85 @@
 @import "tailwindcss";
 
+/*
+ * ECOWAS Corporate Design Manual (Nov 2020) — colour values reproduced
+ * verbatim from "2 | ECOWAS Colours" (p.11). Typeface is Source Sans Pro,
+ * distributed on Google Fonts as "Source Sans 3".
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary colours */
+  --color-ecowas-green: #008244;
+  --color-ecowas-yellow: #e4ca00;
+  --color-ecowas-brown: #ad4f2e;
+
+  /* Secondary colours */
+  --color-ecowas-light-green: #aebd39;
+  --color-ecowas-orange: #f07e26;
+  --color-ecowas-deep-red: #8e1d36;
+  --color-ecowas-sky-blue: #5ea3b3;
+  --color-ecowas-ocean-blue: #004c71;
+  --color-ecowas-blue-grey: #335d68;
+
+  /* Green tints, for hover/pressed states */
+  --color-ecowas-green-dark: #00602f;
+  --color-ecowas-green-tint: #e6f2ec;
+
+  /* Manual specifies the logo may only sit on white or "ECOWAS yellow 12%" —
+     that 12% tint is the app's paper/background colour throughout. */
+  --color-paper: #fbf8ec;
+  --color-surface: #ffffff;
+  --color-border: #e4ddc8;
+
+  --color-ink: #1f2a24;
+  --color-ink-muted: #5b6a61;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+  --font-sans: var(--font-source-sans);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-ecowas-green: var(--color-ecowas-green);
+  --color-ecowas-green-dark: var(--color-ecowas-green-dark);
+  --color-ecowas-green-tint: var(--color-ecowas-green-tint);
+  --color-ecowas-yellow: var(--color-ecowas-yellow);
+  --color-ecowas-brown: var(--color-ecowas-brown);
+  --color-ecowas-light-green: var(--color-ecowas-light-green);
+  --color-ecowas-orange: var(--color-ecowas-orange);
+  --color-ecowas-deep-red: var(--color-ecowas-deep-red);
+  --color-ecowas-sky-blue: var(--color-ecowas-sky-blue);
+  --color-ecowas-ocean-blue: var(--color-ecowas-ocean-blue);
+  --color-ecowas-blue-grey: var(--color-ecowas-blue-grey);
+
+  --color-paper: var(--color-paper);
+  --color-surface: var(--color-surface);
+  --color-border: var(--color-border);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-source-sans), Arial, Helvetica, sans-serif;
+}
+
+/* The yellow/brown/green tricolour rule used on ECOWAS letterheads,
+   publication covers and banners (see "ECOWAS Stationary" / "ECOWAS
+   Publications" chapters). Reused here as the app's signature accent. */
+.ecowas-stripe {
+  display: flex;
+  height: 6px;
+  width: 100%;
+}
+.ecowas-stripe > span:nth-child(1) {
+  background: var(--color-ecowas-yellow);
+  width: 8%;
+}
+.ecowas-stripe > span:nth-child(2) {
+  background: var(--color-ecowas-brown);
+  width: 22%;
+}
+.ecowas-stripe > span:nth-child(3) {
+  background: var(--color-ecowas-green);
+  flex: 1;
 }

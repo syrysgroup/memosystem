@@ -21,42 +21,42 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="rounded-lg border border-border bg-surface p-4">
         <form action={trackDocument} className="flex items-end gap-3">
           <div className="flex-1">
-            <label className="text-sm font-medium text-slate-700">Track a document by its unique code</label>
+            <label className="text-sm font-medium text-ink">Track a document by its unique code</label>
             <input
               name="unique_code"
               placeholder="e.g. FIN-MEM-2026-0001"
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </div>
-          <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+          <button type="submit" className="rounded-md bg-ecowas-green px-4 py-2 text-sm font-medium text-white">
             Track
           </button>
         </form>
         {notfound ? (
-          <p className="mt-2 text-sm text-red-600">No document found for &ldquo;{notfound}&rdquo;.</p>
+          <p className="mt-2 text-sm text-ecowas-deep-red">No document found for &ldquo;{notfound}&rdquo;.</p>
         ) : null}
       </div>
 
       {positions.length === 0 ? (
-        <p className="text-sm text-amber-700">
+        <p className="text-sm text-ecowas-brown">
           You don&rsquo;t currently hold a Position in the organogram, so nothing can be assigned to you yet. Ask an admin
           to create one for you under Directory/My Team.
         </p>
       ) : (
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">In your hands</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-lg font-semibold text-ink">In your hands</h1>
+          <p className="text-sm text-ink-muted">
             Documents currently held by one of your positions: {positions.map((p) => orgUnitName(p.org_unit_id)).join(", ")}.
           </p>
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-500">
+          <thead className="bg-paper text-left text-ink-muted">
             <tr>
               <th className="px-4 py-2">Code</th>
               <th className="px-4 py-2">Subject</th>
@@ -69,15 +69,15 @@ export default async function DashboardPage({
           <tbody>
             {documents.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-6 text-center text-ink-muted">
                   Nothing in your hands right now.
                 </td>
               </tr>
             ) : (
               documents.map((doc) => (
-                <tr key={doc.id} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr key={doc.id} className="border-t border-border hover:bg-ecowas-green-tint">
                   <td className="px-4 py-2 font-mono text-xs">
-                    <Link href={`/documents/${doc.id}`} className="text-slate-900 underline-offset-2 hover:underline">
+                    <Link href={`/documents/${doc.id}`} className="text-ink underline-offset-2 hover:underline">
                       {doc.unique_code}
                     </Link>
                   </td>

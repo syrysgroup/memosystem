@@ -2,29 +2,33 @@ import type { DecisionStatus, DigitalStatus, PhysicalStatus, RequesterTier } fro
 
 export const OVERDUE_THRESHOLD_DAYS = 5;
 
+// Coloured with the ECOWAS Corporate Design Manual's secondary palette
+// (p.11): sky/ocean blue for in-progress states, green for completed/
+// favourable outcomes, deep red for failures/rejections, yellow for
+// pending attention.
 const DIGITAL_STYLES: Record<DigitalStatus, string> = {
-  drafted: "bg-slate-100 text-slate-600",
-  in_transit: "bg-blue-100 text-blue-800",
-  at_office: "bg-slate-100 text-slate-600",
-  under_review: "bg-amber-100 text-amber-800",
-  minuted: "bg-indigo-100 text-indigo-800",
-  decided: "bg-emerald-100 text-emerald-800",
-  reassigned: "bg-orange-100 text-orange-800",
+  drafted: "bg-border/60 text-ink-muted",
+  in_transit: "bg-ecowas-sky-blue/20 text-ecowas-ocean-blue",
+  at_office: "bg-border/60 text-ink-muted",
+  under_review: "bg-ecowas-yellow/25 text-ecowas-brown",
+  minuted: "bg-ecowas-blue-grey/20 text-ecowas-blue-grey",
+  decided: "bg-ecowas-green-tint text-ecowas-green",
+  reassigned: "bg-ecowas-orange/20 text-ecowas-orange",
 };
 
 const PHYSICAL_STYLES: Record<PhysicalStatus, string> = {
-  not_dispatched: "bg-slate-100 text-slate-600",
-  in_transit: "bg-blue-100 text-blue-800",
-  delivered: "bg-emerald-100 text-emerald-800",
-  delivery_failed: "bg-red-100 text-red-800",
+  not_dispatched: "bg-border/60 text-ink-muted",
+  in_transit: "bg-ecowas-sky-blue/20 text-ecowas-ocean-blue",
+  delivered: "bg-ecowas-green-tint text-ecowas-green",
+  delivery_failed: "bg-ecowas-deep-red/15 text-ecowas-deep-red",
 };
 
 const DECISION_STYLES: Record<DecisionStatus, string> = {
-  open: "bg-slate-100 text-slate-600",
-  pending_decision: "bg-amber-100 text-amber-800",
-  approved: "bg-emerald-100 text-emerald-800",
-  rejected: "bg-red-100 text-red-800",
-  withdrawn: "bg-slate-200 text-slate-600",
+  open: "bg-border/60 text-ink-muted",
+  pending_decision: "bg-ecowas-yellow/25 text-ecowas-brown",
+  approved: "bg-ecowas-green-tint text-ecowas-green",
+  rejected: "bg-ecowas-deep-red/15 text-ecowas-deep-red",
+  withdrawn: "bg-border/60 text-ink-muted",
 };
 
 function labelize(s: string) {
@@ -57,17 +61,21 @@ export function DecisionStatusBadge({ status }: { status: DecisionStatus }) {
 
 export function TierBadge({ tier }: { tier: RequesterTier }) {
   return (
-    <span className="inline-block rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+    <span className="inline-block rounded bg-ecowas-brown/15 px-2 py-0.5 text-xs font-medium text-ecowas-brown">
       {labelize(tier)}
     </span>
   );
 }
 
 export function DaysBadge({ days, label }: { days: number | null; label?: string }) {
-  if (days === null) return <span className="text-slate-400">—</span>;
+  if (days === null) return <span className="text-ink-muted">—</span>;
   const overdue = days >= OVERDUE_THRESHOLD_DAYS;
   return (
-    <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${overdue ? "bg-red-100 text-red-800" : "bg-slate-100 text-slate-600"}`}>
+    <span
+      className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
+        overdue ? "bg-ecowas-deep-red/15 text-ecowas-deep-red" : "bg-border/60 text-ink-muted"
+      }`}
+    >
       {days} day{days === 1 ? "" : "s"}
       {label ? ` ${label}` : ""}
     </span>

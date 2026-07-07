@@ -100,12 +100,12 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-slate-200 bg-white p-6">
+      <div className="rounded-lg border border-border bg-surface p-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="font-mono text-xs text-slate-500">{document.unique_code}</p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-900">{document.subject}</h1>
-            <p className="mt-1 text-sm text-slate-500">{document.document_type_name}</p>
+            <p className="font-mono text-xs text-ink-muted">{document.unique_code}</p>
+            <h1 className="mt-1 text-xl font-semibold text-ink">{document.subject}</h1>
+            <p className="mt-1 text-sm text-ink-muted">{document.document_type_name}</p>
           </div>
           <div className="flex flex-col items-end gap-1.5">
             <TierBadge tier={document.requester_tier} />
@@ -113,73 +113,73 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
             <PhysicalStatusBadge status={document.physical_status} />
             <DecisionStatusBadge status={document.decision_status} />
             {document.is_closed ? (
-              <span className="rounded bg-slate-900 px-2 py-0.5 text-xs font-medium text-white">Closed</span>
+              <span className="rounded bg-ecowas-green px-2 py-0.5 text-xs font-medium text-white">Closed</span>
             ) : null}
           </div>
         </div>
 
-        {document.summary ? <p className="mt-4 text-sm text-slate-700">{document.summary}</p> : null}
+        {document.summary ? <p className="mt-4 text-sm text-ink">{document.summary}</p> : null}
 
         <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
           <div>
-            <dt className="text-slate-500">Originated by</dt>
-            <dd className="text-slate-900">{positionLabel(document.originating_position_id)}</dd>
+            <dt className="text-ink-muted">Originated by</dt>
+            <dd className="text-ink">{positionLabel(document.originating_position_id)}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Digital custodian</dt>
-            <dd className="text-slate-900">{positionLabel(document.current_digital_custodian_id)}</dd>
+            <dt className="text-ink-muted">Digital custodian</dt>
+            <dd className="text-ink">{positionLabel(document.current_digital_custodian_id)}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Physical custodian</dt>
-            <dd className="text-slate-900">{positionLabel(document.current_physical_custodian_id)}</dd>
+            <dt className="text-ink-muted">Physical custodian</dt>
+            <dd className="text-ink">{positionLabel(document.current_physical_custodian_id)}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Days in current office</dt>
+            <dt className="text-ink-muted">Days in current office</dt>
             <dd><DaysBadge days={document.days_in_office} /></dd>
           </div>
           <div>
-            <dt className="text-slate-500">Days in system</dt>
+            <dt className="text-ink-muted">Days in system</dt>
             <dd><DaysBadge days={document.days_in_system} /></dd>
           </div>
           <div>
-            <dt className="text-slate-500">Created</dt>
-            <dd className="text-slate-900">{new Date(document.created_at).toLocaleDateString()}</dd>
+            <dt className="text-ink-muted">Created</dt>
+            <dd className="text-ink">{new Date(document.created_at).toLocaleDateString()}</dd>
           </div>
         </dl>
 
         {document.decision_status !== "open" && document.decision_status !== "pending_decision" ? (
-          <div className="mt-4 rounded-md bg-slate-50 p-4 text-sm">
-            <p className="font-medium text-slate-700">
+          <div className="mt-4 rounded-md bg-paper p-4 text-sm">
+            <p className="font-medium text-ink">
               Decision: {document.decision_status} {document.decision_number ? `(${document.decision_number})` : ""}
             </p>
-            <p className="text-slate-600">{document.decision_summary}</p>
+            <p className="text-ink-muted">{document.decision_summary}</p>
           </div>
         ) : null}
 
         {document.superseded_at ? (
-          <div className="mt-4 rounded-md bg-amber-50 p-4 text-sm">
-            <p className="font-medium text-amber-800">
+          <div className="mt-4 rounded-md bg-ecowas-yellow/10 p-4 text-sm">
+            <p className="font-medium text-ecowas-brown">
               Superseded {new Date(document.superseded_at).toLocaleDateString()} by {positionLabel(document.superseded_by_position_id)}
             </p>
-            <p className="text-amber-700">{document.superseded_reason}</p>
+            <p className="text-ecowas-brown">{document.superseded_reason}</p>
           </div>
         ) : null}
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2">
         {isDigitalCustodian ? (
-          <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-            <h2 className="text-sm font-semibold text-slate-900">Route digitally</h2>
+          <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
+            <h2 className="text-sm font-semibold text-ink">Route digitally</h2>
             <form action={routeDigital} className="space-y-2">
               <input type="hidden" name="document_id" value={document.id} />
-              <select name="digital_status" required className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+              <select name="digital_status" required className="w-full rounded-md border border-border px-3 py-2 text-sm">
                 {DIGITAL_OPTIONS.map((s) => (
                   <option key={s} value={s}>
                     {s.replace("_", " ")}
                   </option>
                 ))}
               </select>
-              <select name="to_position_id" required className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+              <select name="to_position_id" required className="w-full rounded-md border border-border px-3 py-2 text-sm">
                 <option value={document.current_digital_custodian_id ?? ""}>Keep current custodian</option>
                 {referencedPositions
                   .filter((p) => p.id !== document.current_digital_custodian_id)
@@ -189,17 +189,17 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
                     </option>
                   ))}
               </select>
-              <button type="submit" className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">
+              <button type="submit" className="rounded-md bg-ecowas-green px-3 py-2 text-sm font-medium text-white">
                 Apply
               </button>
             </form>
 
-            <form action={addMinute} className="space-y-2 border-t border-slate-100 pt-3">
-              <h2 className="text-sm font-semibold text-slate-900">Add a minute</h2>
+            <form action={addMinute} className="space-y-2 border-t border-border pt-3">
+              <h2 className="text-sm font-semibold text-ink">Add a minute</h2>
               <input type="hidden" name="document_id" value={document.id} />
               <input type="hidden" name="author_position_id" value={document.current_digital_custodian_id ?? ""} />
-              <textarea name="content" required placeholder="Minute…" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-              <button type="submit" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700">
+              <textarea name="content" required placeholder="Minute…" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+              <button type="submit" className="rounded-md border border-border px-3 py-2 text-sm font-medium text-ink hover:bg-ecowas-green-tint">
                 Post minute
               </button>
             </form>
@@ -208,18 +208,18 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
 
         <div className="space-y-3">
           {isPhysicalCustodian ? (
-            <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-4">
-              <h2 className="text-sm font-semibold text-slate-900">Update physical status</h2>
+            <div className="space-y-2 rounded-lg border border-border bg-surface p-4">
+              <h2 className="text-sm font-semibold text-ink">Update physical status</h2>
               <form action={routePhysical} className="space-y-2">
                 <input type="hidden" name="document_id" value={document.id} />
-                <select name="physical_status" required className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <select name="physical_status" required className="w-full rounded-md border border-border px-3 py-2 text-sm">
                   {PHYSICAL_OPTIONS.map((s) => (
                     <option key={s} value={s}>
                       {s.replace("_", " ")}
                     </option>
                   ))}
                 </select>
-                <select name="to_position_id" required className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <select name="to_position_id" required className="w-full rounded-md border border-border px-3 py-2 text-sm">
                   <option value={document.current_physical_custodian_id ?? ""}>Keep current custodian</option>
                   {referencedPositions
                     .filter((p) => p.id !== document.current_physical_custodian_id)
@@ -229,7 +229,7 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
                       </option>
                     ))}
                 </select>
-                <select name="physical_failure_reason" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <select name="physical_failure_reason" className="w-full rounded-md border border-border px-3 py-2 text-sm">
                   <option value="">Delivery failure reason (if applicable)</option>
                   {FAILURE_REASONS.map((r) => (
                     <option key={r} value={r}>
@@ -237,8 +237,8 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
                     </option>
                   ))}
                 </select>
-                <input name="physical_failure_note" placeholder="Note (required if reason is 'other')" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                <button type="submit" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700">
+                <input name="physical_failure_note" placeholder="Note (required if reason is 'other')" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+                <button type="submit" className="rounded-md border border-border px-3 py-2 text-sm font-medium text-ink hover:bg-ecowas-green-tint">
                   Apply
                 </button>
               </form>
@@ -246,18 +246,18 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
           ) : null}
 
           {canDecide && isDecisionOpen ? (
-            <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-4">
-              <h2 className="text-sm font-semibold text-slate-900">Make a decision</h2>
+            <div className="space-y-2 rounded-lg border border-border bg-surface p-4">
+              <h2 className="text-sm font-semibold text-ink">Make a decision</h2>
               <form action={makeDecision} className="space-y-2">
                 <input type="hidden" name="document_id" value={document.id} />
-                <select name="decision_status" required className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <select name="decision_status" required className="w-full rounded-md border border-border px-3 py-2 text-sm">
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
                   <option value="withdrawn">Withdrawn</option>
                 </select>
-                <textarea name="decision_summary" required placeholder="Plain-language decision summary" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                <input name="decision_number" placeholder="Decision number (optional)" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                <button type="submit" className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white">
+                <textarea name="decision_summary" required placeholder="Plain-language decision summary" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+                <input name="decision_number" placeholder="Decision number (optional)" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+                <button type="submit" className="rounded-md bg-ecowas-green px-3 py-2 text-sm font-medium text-white">
                   Decide
                 </button>
               </form>
@@ -265,30 +265,30 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
           ) : null}
 
           {canSupersede ? (
-            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <h2 className="text-sm font-semibold text-slate-900">Supersede this Circular (SG only)</h2>
+            <div className="space-y-2 rounded-lg border border-ecowas-yellow/40 bg-ecowas-yellow/10 p-4">
+              <h2 className="text-sm font-semibold text-ink">Supersede this Circular (SG only)</h2>
               <form action={supersedeCircular} className="space-y-2">
                 <input type="hidden" name="document_id" value={document.id} />
-                <input name="reason" required placeholder="Reason" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                <button type="submit" className="rounded-md border border-amber-400 px-3 py-2 text-sm font-medium text-amber-900">
+                <input name="reason" required placeholder="Reason" className="w-full rounded-md border border-border px-3 py-2 text-sm" />
+                <button type="submit" className="rounded-md border border-ecowas-brown/50 px-3 py-2 text-sm font-medium text-ecowas-brown">
                   Supersede
                 </button>
               </form>
             </div>
           ) : null}
 
-          <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-4">
-            <h2 className="text-sm font-semibold text-slate-900">Attach a file</h2>
+          <div className="space-y-2 rounded-lg border border-border bg-surface p-4">
+            <h2 className="text-sm font-semibold text-ink">Attach a file</h2>
             <form action={uploadAttachment} className="space-y-2">
               <input type="hidden" name="document_id" value={document.id} />
-              <select name="kind" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+              <select name="kind" className="w-full rounded-md border border-border px-3 py-2 text-sm">
                 <option value="scan">Scan of original</option>
                 <option value="acknowledgment">Acknowledgment</option>
                 <option value="decision_stamp">Decision stamp record</option>
                 <option value="other">Other</option>
               </select>
               <input type="file" name="file" required className="w-full text-sm" />
-              <button type="submit" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700">
+              <button type="submit" className="rounded-md border border-border px-3 py-2 text-sm font-medium text-ink hover:bg-ecowas-green-tint">
                 Upload
               </button>
             </form>
@@ -297,56 +297,56 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
       </div>
 
       {attachmentLinks.length > 0 ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="mb-2 text-sm font-semibold text-slate-900">Attachments</h2>
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <h2 className="mb-2 text-sm font-semibold text-ink">Attachments</h2>
           <ul className="space-y-1 text-sm">
             {attachmentLinks.map((a) => (
               <li key={a.id}>
                 {a.url ? (
-                  <a href={a.url} className="text-slate-900 underline" target="_blank" rel="noreferrer">
+                  <a href={a.url} className="text-ink underline" target="_blank" rel="noreferrer">
                     {a.file_name}
                   </a>
                 ) : (
                   a.file_name
                 )}
-                <span className="ml-2 text-xs text-slate-400">({a.kind})</span>
+                <span className="ml-2 text-xs text-ink-muted">({a.kind})</span>
               </li>
             ))}
           </ul>
         </div>
       ) : null}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-900">Minutes</h2>
+      <div className="rounded-lg border border-border bg-surface p-4">
+        <h2 className="mb-3 text-sm font-semibold text-ink">Minutes</h2>
         {minutes.length === 0 ? (
-          <p className="text-sm text-slate-400">No minutes visible to you on this document.</p>
+          <p className="text-sm text-ink-muted">No minutes visible to you on this document.</p>
         ) : (
           <ul className="space-y-3">
             {minutes.map((m) => (
               <li key={m.id} className="text-sm">
-                <p className="font-medium text-slate-700">{positionLabel(m.author_position_id)}</p>
-                <p className="text-slate-600">{m.content}</p>
-                <p className="text-xs text-slate-400">{new Date(m.created_at).toLocaleString()}</p>
+                <p className="font-medium text-ink">{positionLabel(m.author_position_id)}</p>
+                <p className="text-ink-muted">{m.content}</p>
+                <p className="text-xs text-ink-muted">{new Date(m.created_at).toLocaleString()}</p>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-900">Movement history</h2>
+      <div className="rounded-lg border border-border bg-surface p-4">
+        <h2 className="mb-3 text-sm font-semibold text-ink">Movement history</h2>
         <ol className="space-y-3">
           {movements.map((m) => (
-            <li key={m.id} className="border-l-2 border-slate-200 pl-4 text-sm">
-              <p className="text-slate-900">
+            <li key={m.id} className="border-l-2 border-border pl-4 text-sm">
+              <p className="text-ink">
                 [{m.channel}] {m.from_position_id ? positionLabel(m.from_position_id) : "Originated"} → {positionLabel(m.to_position_id)}
               </p>
-              <p className="text-xs text-slate-500">{new Date(m.occurred_at).toLocaleString()}</p>
-              {m.resulting_digital_status ? <p className="text-xs text-slate-600">Digital: {m.resulting_digital_status}</p> : null}
-              {m.resulting_physical_status ? <p className="text-xs text-slate-600">Physical: {m.resulting_physical_status}</p> : null}
-              {m.resulting_decision_status ? <p className="text-xs text-slate-600">Decision: {m.resulting_decision_status}</p> : null}
+              <p className="text-xs text-ink-muted">{new Date(m.occurred_at).toLocaleString()}</p>
+              {m.resulting_digital_status ? <p className="text-xs text-ink-muted">Digital: {m.resulting_digital_status}</p> : null}
+              {m.resulting_physical_status ? <p className="text-xs text-ink-muted">Physical: {m.resulting_physical_status}</p> : null}
+              {m.resulting_decision_status ? <p className="text-xs text-ink-muted">Decision: {m.resulting_decision_status}</p> : null}
               {m.failure_reason ? (
-                <p className="text-xs text-red-700">
+                <p className="text-xs text-ecowas-deep-red">
                   Delivery failed: {m.failure_reason}
                   {m.failure_note ? ` — ${m.failure_note}` : ""}
                 </p>

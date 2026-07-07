@@ -17,7 +17,7 @@ export default async function DirectMessagePage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-semibold text-slate-900">{other.full_name}</h1>
+      <h1 className="text-lg font-semibold text-ink">{other.full_name}</h1>
       <MessageThread messages={messages} staffById={staffById} currentUserId={profile.id} />
       <form action={postDirectMessage} className="flex gap-2">
         <input type="hidden" name="recipient_id" value={userId} />
@@ -25,9 +25,9 @@ export default async function DirectMessagePage({ params }: { params: Promise<{ 
           name="body"
           required
           placeholder={`Message ${other.full_name}…`}
-          className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="flex-1 rounded-md border border-border px-3 py-2 text-sm"
         />
-        <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+        <button type="submit" className="rounded-md bg-ecowas-green px-4 py-2 text-sm font-medium text-white">
           Send
         </button>
       </form>

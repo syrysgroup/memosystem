@@ -23,7 +23,7 @@ export default async function ReportsPage({
 
   if (overseeableOrgUnits.length === 0) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-ink-muted">
         Reporting-line data is only available to Head/Office Manager positions (or admins), for their own office and
         everything beneath it.
       </p>
@@ -47,8 +47,8 @@ export default async function ReportsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-slate-900">Reports</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-lg font-semibold text-ink">Reports</h1>
+        <p className="text-sm text-ink-muted">
           Aggregate-only — this is the standing ReportingRole view (no subject lines). Drill-down below is
           deliberately broader per spec, but still not full document access.
         </p>
@@ -56,15 +56,15 @@ export default async function ReportsPage({
 
       {overseeableOrgUnits.length > 1 ? (
         <form method="get" className="flex items-center gap-2">
-          <label className="text-sm text-slate-700">Office:</label>
-          <select name="org_unit_id" defaultValue={rootOrgUnitId} className="rounded-md border border-slate-300 px-3 py-2 text-sm">
+          <label className="text-sm text-ink">Office:</label>
+          <select name="org_unit_id" defaultValue={rootOrgUnitId} className="rounded-md border border-border px-3 py-2 text-sm">
             {overseeableOrgUnits.map((ou) => (
               <option key={ou.id} value={ou.id}>
                 {ou.name}
               </option>
             ))}
           </select>
-          <button type="submit" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700">
+          <button type="submit" className="rounded-md border border-border px-3 py-2 text-sm font-medium text-ink hover:bg-ecowas-green-tint">
             View
           </button>
         </form>
@@ -72,8 +72,8 @@ export default async function ReportsPage({
 
       <div className="grid grid-cols-3 gap-4">
         {buckets.map((bucket) => (
-          <div key={bucket} className="rounded-lg border border-slate-200 bg-white p-4">
-            <p className="text-xs text-slate-500">{bucket} days</p>
+          <div key={bucket} className="rounded-lg border border-border bg-surface p-4">
+            <p className="text-xs text-ink-muted">{bucket} days</p>
             <p className="mt-1 text-sm">
               Decision pending: <span className="font-semibold">{countFor(bucket, "decision_pending")}</span>
             </p>
@@ -85,19 +85,19 @@ export default async function ReportsPage({
       </div>
 
       {newlyInheritedCount > 0 ? (
-        <p className="text-sm text-amber-700">
+        <p className="text-sm text-ecowas-brown">
           {newlyInheritedCount} of the above arrived at their current office only after a reorganisation placed it
           under your reporting line — not a sudden backlog.
         </p>
       ) : null}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-900">Drill-down (subject + offices)</h2>
+      <div className="rounded-lg border border-border bg-surface p-4">
+        <h2 className="mb-3 text-sm font-semibold text-ink">Drill-down (subject + offices)</h2>
         {drilldown.length === 0 ? (
-          <p className="text-sm text-slate-400">Nothing open in this scope.</p>
+          <p className="text-sm text-ink-muted">Nothing open in this scope.</p>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-slate-500">
+            <thead className="bg-paper text-left text-ink-muted">
               <tr>
                 <th className="px-3 py-2">Code</th>
                 <th className="px-3 py-2">Subject</th>
@@ -109,15 +109,15 @@ export default async function ReportsPage({
             </thead>
             <tbody>
               {drilldown.map((row) => (
-                <tr key={row.document_id} className="border-t border-slate-100">
+                <tr key={row.document_id} className="border-t border-border">
                   <td className="px-3 py-2 font-mono text-xs">{row.unique_code}</td>
                   <td className="px-3 py-2">{row.subject}</td>
-                  <td className="px-3 py-2 text-slate-500">{row.originating_office_name}</td>
-                  <td className="px-3 py-2 text-slate-500">{row.pending_office_name}</td>
+                  <td className="px-3 py-2 text-ink-muted">{row.originating_office_name}</td>
+                  <td className="px-3 py-2 text-ink-muted">{row.pending_office_name}</td>
                   <td className="px-3 py-2">
                     <DaysBadge days={row.days_in_office} />
                   </td>
-                  <td className="px-3 py-2 text-xs text-slate-500">
+                  <td className="px-3 py-2 text-xs text-ink-muted">
                     {row.decision_pending ? "decision " : ""}
                     {row.delivery_outstanding ? "delivery" : ""}
                   </td>
