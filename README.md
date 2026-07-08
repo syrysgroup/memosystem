@@ -108,14 +108,16 @@ French, Portuguese:
 
 ## Demo accounts
 
-A small demo org (`supabase/migrations/0024_demo_seed.sql`) is seeded on the
-live project so every role can be logged into without first building an
-organogram by hand. Password for all of them: **`EcowasDemo#2026`** (also
-shown via "Show demo accounts" on the login page).
+A small set of demo accounts (`supabase/migrations/0024_demo_seed.sql`) is
+seeded on the live project so every role can be logged into without first
+building an organogram by hand. Password for all of them:
+**`EcowasDemo#2026`** (also shown via "Show demo accounts" on the login
+page). Their positions were reassigned onto the real organogram below by
+`0028_real_ecowas_organogram.sql`.
 
 | Role | Email | What it demonstrates |
 | --- | --- | --- |
-| Admin | `demo.admin@ecowas-demo.org` | `is_admin`, audit grant issuance, head of Directorate of Communication |
+| Admin | `demo.admin@ecowas-demo.org` | `is_admin`, audit grant issuance, head of Communication Division |
 | Secretary-General | `demo.sg@ecowas-demo.org` | `named_role = 'sg'` — Circular decision authority, supersession |
 | Director, Admin & Finance | `demo.finance@ecowas-demo.org` | `named_role = 'director_admin_finance'`, an overdue incoming letter in queue |
 | Head of HR | `demo.hr@ecowas-demo.org` | `named_role = 'head_hr'`, a fully decided/closed Memo |
@@ -128,6 +130,56 @@ These are ordinary rows (`org_units`, `positions`, `profiles`,
 you'd remove any other test data if you don't want them on a production
 deployment. Seeding auth.users directly requires running as the Postgres
 service role (Supabase SQL editor/CLI/MCP), not through the app itself.
+
+## Organogram
+
+`supabase/migrations/0028_real_ecowas_organogram.sql` replaces the
+placeholder demo org structure with the actual ECOWAS Parliament organogram,
+as supplied by the institution — provisional, pending HR's own eventual
+update:
+
+```
+Office of the Honourable Speaker
+└─ Office of the Secretary-General
+   ├─ Office of the Principal Legal Adviser
+   ├─ Bureau & Strategic Planning
+   ├─ Communication Division
+   ├─ Protocol Division
+   ├─ Directorate of Administration & Finance
+   │  ├─ Finance Division
+   │  ├─ General Admin & Conference Division   (Registry — see note below)
+   │  ├─ Infrastructure Division
+   │  └─ Human Resource Division
+   └─ Directorate of Parliamentary Affairs & Research
+      ├─ Parliamentary Business Division
+      ├─ Hansard Division
+      ├─ Language Services Division
+      └─ Library, Documentation & Research Division
+```
+
+Two things worth knowing before treating this as final:
+
+- **Depth**: `positions` is Role + Person + OrgUnit with no grade/job-title
+  field, so the individual named posts on the source chart (e.g. "13
+  Committee Clerks, P2/P3/P4", "11 Drivers, G1/G2/G3") aren't modelled as
+  separate `org_units` — those are staff establishment slots within a
+  Division, to be added as real `positions` once people are assigned to
+  them. Only the boxes that are themselves organizational units (each a
+  potential document custodian) became `org_units`.
+- **Registry assumption**: nothing on the source chart is literally labeled
+  "Registry," but the system requires exactly one unit flagged `is_registry`
+  for incoming/outgoing external correspondence to be logged at all
+  (enforced at the trigger level — see "Registry" below). **General Admin &
+  Conference Division** was picked as the closest functional match and
+  flagged provisionally; this is a one-column `UPDATE`, not a structural
+  change, so it's easy to move once HR confirms or reassigns it.
+
+The old demo-only units (Directorate of Communication, Corporate
+Communication Division, Press & Media Office, Office of the President,
+Registry Office) were closed out (`effective_to` set, `superseded_by_id`
+pointing at their real successor) rather than deleted, per the versioned-
+graph design — they stay resolvable for any historical document chain that
+referenced them, but no longer appear in current org-unit pickers.
 
 ## Core model
 
