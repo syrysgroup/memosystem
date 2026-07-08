@@ -17,9 +17,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-paper">
       <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-border bg-surface">
-        <div className="flex items-center justify-between gap-2 p-4">
+        <div className="p-4">
           <Logo size={36} />
-          <LanguageSwitcher current={locale} />
         </div>
         <StripeBar />
         <SidebarNav nav={dict.nav} />
@@ -30,15 +29,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               {dict.common.onLeaveReadOnly}
             </span>
           ) : null}
-          <form action={signOut} className="mt-2">
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-ecowas-green"
-            >
-              <IconLogout className="h-4 w-4" />
-              {dict.common.signOut}
-            </button>
-          </form>
+          <div className="mt-3 flex items-center justify-between">
+            <LanguageSwitcher current={locale} />
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-ecowas-green"
+              >
+                <IconLogout className="h-4 w-4" />
+                {dict.common.signOut}
+              </button>
+            </form>
+          </div>
         </div>
       </aside>
       <main className="min-w-0 flex-1 px-8 py-8">{children}</main>
