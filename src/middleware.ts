@@ -3,6 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
+  const isPasswordResetRoute =
+    request.nextUrl.pathname.startsWith("/forgot-password") ||
+    request.nextUrl.pathname.startsWith("/reset-password");
+  const isPublicRoute = isAuthRoute || isPasswordResetRoute;
 
   let response = NextResponse.next({ request });
   let user = null;
@@ -26,6 +30,17 @@ export async function middleware(request: NextRequest) {
         },
       }
     );
+
+    // The password-recovery email link lands on /reset-password?code=... --
+    // exchange it for a session here (middleware is the only place that can
+    // actually persist the resulting cookies before the page renders; a
+    // Server Component render body can't mutate cookies, see server.ts).
+    if (request.nextUrl.pathname === "/reset-password") {
+      const code = request.nextUrl.searchParams.get("code");
+      if (code) {
+        await supabase.auth.exchangeCodeForSession(code);
+      }
+    }
 
     const {
       data: { user: authUser },
@@ -59,7 +74,7 @@ export async function middleware(request: NextRequest) {
     console.error("middleware: failed to resolve Supabase session", error);
   }
 
-  if (!user && !isAuthRoute) {
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

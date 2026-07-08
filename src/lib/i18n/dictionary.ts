@@ -38,6 +38,24 @@ export type Dictionary = {
     demoHint: string;
     demoPasswordLabel: string;
     genericError: string;
+    forgotPasswordLink: string;
+  };
+  passwordReset: {
+    forgotTitle: string;
+    forgotSubtitle: string;
+    emailLabel: string;
+    sendResetLink: string;
+    checkEmailNote: string;
+    backToLogin: string;
+    resetTitle: string;
+    resetSubtitle: string;
+    newPasswordLabel: string;
+    confirmPasswordLabel: string;
+    passwordsDontMatch: string;
+    passwordTooShort: string;
+    setPassword: string;
+    resetSuccess: string;
+    invalidOrExpiredLink: string;
   };
   dashboard: {
     welcome: string;
@@ -226,6 +244,34 @@ export type Dictionary = {
     roleStaff: string;
     roleOfficeManager: string;
     roleHead: string;
+    positionTemplateLabel: string;
+    positionTemplateNone: string;
+    gradeLabel: string;
+    gradePlaceholder: string;
+    addStaffTitle: string;
+    addStaffSubtitle: string;
+    fullNameLabel: string;
+    emailLabel: string;
+    createAccount: string;
+    tempPasswordLabel: string;
+    tempPasswordNote: string;
+  };
+  profile: {
+    title: string;
+    subtitle: string;
+    positionsTitle: string;
+    colOffice: string;
+    colRole: string;
+    colGrade: string;
+    noPositions: string;
+    phoneLabel: string;
+    nationalityLabel: string;
+    bioLabel: string;
+    bioPlaceholder: string;
+    dateOfAppointmentLabel: string;
+    avatarLabel: string;
+    saveButton: string;
+    saved: string;
   };
   auditGrants: {
     title: string;

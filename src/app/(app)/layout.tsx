@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/data";
 import { signOut } from "./actions";
@@ -23,7 +24,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <StripeBar />
         <SidebarNav nav={dict.nav} />
         <div className="border-t border-border p-4">
-          <p className="truncate text-sm font-medium text-ink">{profile.full_name}</p>
+          <Link href="/profile" className="block truncate text-sm font-medium text-ink hover:text-ecowas-green hover:underline">
+            {profile.full_name}
+          </Link>
           {profile.on_leave ? (
             <span className="mt-1 inline-block rounded bg-ecowas-yellow/30 px-2 py-0.5 text-xs font-medium text-ecowas-brown">
               {dict.common.onLeaveReadOnly}

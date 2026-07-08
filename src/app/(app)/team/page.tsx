@@ -6,23 +6,45 @@ import {
   getMyActivePositions,
   getOrgUnitDescendantIds,
   getOrgUnits,
+  getPositionTypes,
   getStaffDirectory,
 } from "@/lib/data";
 import { assignDelegation, createPosition, endDelegation, endPosition, setLeaveStatus } from "./actions";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { roleLabel } from "@/lib/labels";
+import { AddStaffForm } from "@/components/add-staff-form";
 
 export default async function TeamPage() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
   const dict = await getDictionary();
-  const [myPositions, orgUnits, staff] = await Promise.all([
+  const [myPositions, orgUnits, staff, positionTypes] = await Promise.all([
     getMyActivePositions(profile.id),
     getOrgUnits(),
     getStaffDirectory(),
+    getPositionTypes(),
   ]);
+  // institutionWideCount is a function -- can't cross into the
+  // AddStaffForm Client Component, so it's picked out explicitly rather
+  // than passing dict.team whole (see add-staff-form.tsx).
+  const addStaffDict = {
+    addStaffTitle: dict.team.addStaffTitle,
+    addStaffSubtitle: dict.team.addStaffSubtitle,
+    fullNameLabel: dict.team.fullNameLabel,
+    emailLabel: dict.team.emailLabel,
+    roleStaff: dict.team.roleStaff,
+    roleOfficeManager: dict.team.roleOfficeManager,
+    roleHead: dict.team.roleHead,
+    positionTemplateLabel: dict.team.positionTemplateLabel,
+    positionTemplateNone: dict.team.positionTemplateNone,
+    gradeLabel: dict.team.gradeLabel,
+    gradePlaceholder: dict.team.gradePlaceholder,
+    createAccount: dict.team.createAccount,
+    tempPasswordLabel: dict.team.tempPasswordLabel,
+    tempPasswordNote: dict.team.tempPasswordNote,
+  };
 
   const overseeingPositions = (profile.is_admin || profile.is_org_admin)
     ? myPositions
@@ -143,6 +165,29 @@ export default async function TeamPage() {
             <option value="office_manager">{dict.team.roleOfficeManager}</option>
             <option value="head">{dict.team.roleHead}</option>
           </select>
+          <div>
+            <label className="text-xs text-ink-muted">{dict.team.positionTemplateLabel}</label>
+            <select name="position_type_id" className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm">
+              <option value="">{dict.team.positionTemplateNone}</option>
+              {orgUnits
+                .filter((ou) => scopeOrgUnitIds.includes(ou.id))
+                .map((ou) => {
+                  const types = positionTypes.filter((pt) => pt.org_unit_id === ou.id);
+                  if (types.length === 0) return null;
+                  return (
+                    <optgroup key={ou.id} label={ou.name}>
+                      {types.map((pt) => (
+                        <option key={pt.id} value={pt.id}>
+                          {pt.title}
+                          {pt.grade_band.length > 0 ? ` (${pt.grade_band.join("/")})` : ""}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
+            </select>
+          </div>
+          <input name="grade" placeholder={dict.team.gradePlaceholder} className="w-full rounded-md border border-border px-3 py-2 text-sm" />
           <button type="submit" className="rounded-md bg-ecowas-green px-4 py-2 text-sm font-medium text-white">
             {dict.common.assign}
           </button>
@@ -174,6 +219,10 @@ export default async function TeamPage() {
           </button>
         </form>
       </div>
+
+      {profile.is_admin || profile.is_org_admin ? (
+        <AddStaffForm orgUnits={orgUnits} positionTypes={positionTypes} dict={addStaffDict} />
+      ) : null}
 
       <div className="rounded-lg border border-border bg-surface p-4">
         <h2 className="mb-3 text-sm font-semibold text-ink">{dict.team.activeDelegations}</h2>

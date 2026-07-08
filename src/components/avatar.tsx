@@ -19,11 +19,25 @@ export function Avatar({
   name,
   shape = "circle",
   size = 40,
+  photoUrl,
 }: {
   name: string;
   shape?: "circle" | "square";
   size?: number;
+  photoUrl?: string | null;
 }) {
+  if (photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- signed URLs expire, so a static <Image> optimization cache would go stale
+      <img
+        src={photoUrl}
+        alt={name}
+        className={`shrink-0 object-cover ${shape === "circle" ? "rounded-full" : "rounded-md"}`}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   return (
     <div
       className={`flex shrink-0 items-center justify-center font-semibold text-white ${shape === "circle" ? "rounded-full" : "rounded-md"}`}

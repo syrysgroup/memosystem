@@ -46,6 +46,11 @@ export type Profile = {
   on_leave: boolean;
   leave_start: string | null;
   leave_end: string | null;
+  phone_number: string | null;
+  nationality: string | null;
+  bio: string | null;
+  date_of_appointment: string | null;
+  avatar_path: string | null;
   created_at: string;
 };
 
@@ -254,6 +259,7 @@ export type Database = {
       org_units: Table<OrgUnit>;
       prefix_decode_table: Table<PrefixDecodeEntry>;
       positions: Table<Position>;
+      position_types: Table<PositionType>;
       document_types: Table<DocumentType>;
       documents: Table<DocumentRow>;
       movement_events: Table<MovementEvent>;

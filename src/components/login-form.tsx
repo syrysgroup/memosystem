@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
+import Link from "next/link";
 import { signIn } from "@/app/login/actions";
 import { Logo } from "@/components/logo";
 import { StripeBar } from "@/components/stripe-bar";
@@ -69,6 +70,10 @@ export function LoginForm({ dict }: { dict: Dictionary["login"] }) {
           >
             {pending ? dict.signingIn : dict.signIn}
           </button>
+
+          <Link href="/forgot-password" className="block text-center text-sm text-ecowas-green hover:text-ecowas-green-dark">
+            {dict.forgotPasswordLink}
+          </Link>
         </form>
       </div>
 

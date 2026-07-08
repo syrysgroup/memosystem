@@ -105,6 +105,16 @@ French, Portuguese:
   Client Components") if the whole `Dictionary` crosses the server/client
   boundary. `DaysBadge` and friends in `src/components/badges.tsx` are safe
   because they're only ever rendered from Server Components.
+- The check has to be recursive: narrowing to a section like
+  `Dictionary["team"]` isn't automatically safe if that section itself
+  contains a function key (it does — `institutionWideCount`). Passing
+  `Dictionary["team"]` whole to `<AddStaffForm>` hit the exact same runtime
+  error one level down. Fixed by `Pick`-ing only the specific string keys
+  the component actually renders, not `Omit`-ing the one function key —
+  `Omit<Dictionary["team"], "institutionWideCount">` still requires every
+  *other* key on that type to be supplied, which just moves the friction
+  from a runtime crash to a spurious compile error demanding fields the
+  component never uses.
 
 ## Demo accounts
 
@@ -183,14 +193,15 @@ Things worth knowing before treating this as final:
   not just an app-level check. 74 templates (113 total slots) came out of
   the four charts this way; `role`/`named_role` (which drive permission
   scoping) are untouched and independent of this.
-- **Registry assumption**: nothing on the source chart is literally labeled
+- **Registry — confirmed**: nothing on the source chart is literally labeled
   "Registry," but the system requires exactly one unit flagged `is_registry`
   for incoming/outgoing external correspondence to be logged at all
   (enforced at the trigger level — see "Registry" below). **General Admin &
   Conference Division** was picked as the closest functional match and
-  flagged provisionally, noted in its `source` field; this is a one-column
-  `UPDATE`, not a structural change, so it's easy to move once HR confirms
-  or reassigns it.
+  flagged provisionally at first; the institution has since confirmed it is
+  in fact the official Registry, captured in its `source` field
+  (`0032_registry_confirmed_by_hr.sql`) rather than treated as settled
+  without a record.
 
 The old demo-only units (Directorate of Communication, Corporate
 Communication Division, Press & Media Office, Office of the President,
@@ -277,6 +288,69 @@ referenced them, but no longer appear in current org-unit pickers.
   `grants` insert/select, `supersede_circular()`) was already correctly
   enforced at the RLS/trigger/function level, not just hidden in the UI.
 
+## Staff onboarding
+
+New staff accounts are created from the Team page (`org_admin`/`is_admin`
+only) via a Supabase Edge Function (`supabase/functions/admin-create-staff`),
+not a client-side call to the Auth admin API. That API needs the
+service-role key, which must never reach the Next.js/Cloudflare Workers
+runtime — Supabase provisions `SUPABASE_SERVICE_ROLE_KEY` automatically
+*inside* every edge function, so the function is the only place that key
+exists. The function re-verifies the caller server-side by building a
+request-scoped client from the incoming `Authorization` header and calling
+the same `is_org_admin()` RPC the rest of the app trusts — invoking the
+function at all doesn't imply authorization to use it. On success it
+creates the auth user with a securely-generated temporary password
+(`email_confirm: true`, no email round-trip needed), inserts the matching
+`profiles` row, and optionally an initial `positions` row — rolling the auth
+user back if the profile insert fails, and surfacing a 207 (with the temp
+password still returned) if only the position insert fails, so a partial
+failure never leaves an admin unsure whether the account exists. The temp
+password is shown once, in the UI, for the admin to relay to the new hire;
+it isn't logged or emailed.
+
+## Detailed profiles
+
+`profiles` now carries `phone_number`, `nationality`, `bio`,
+`date_of_appointment`, and `avatar_path` (`0031_detailed_profiles.sql`).
+Every user has a `/profile` page showing their positions (office, role,
+grade — via `position_types`) and a self-edit form for the fields above,
+including a photo upload. Photos live in a `profile-photos` storage bucket;
+`SELECT` is unrestricted-by-owner (matching `profiles_select = true` — the
+directory is institution-wide, so anyone authenticated can view anyone's
+photo), while `INSERT`/`UPDATE`/`DELETE` are scoped to the owner
+(`auth.uid()`) or their line manager (`oversees_profile()`). The Directory
+page surfaces the same avatar and phone number read-only.
+
+## Position templates in the assignment flow
+
+`position_types` (title + `grade_band` + `slot_count` per org unit,
+`0029_position_types_and_provenance.sql`) is wired into both places a
+Position gets created: the Team page's existing "assign a position" form
+and the new "add staff member" form, each offering an org-unit-grouped
+`<optgroup>` picker of templates (showing the allowed grade band) alongside
+a free-text grade field. A `BEFORE INSERT OR UPDATE` trigger on `positions`
+rejects any `grade` not in the referenced template's `grade_band` —
+enforced at the database level, not just the form — verified live with both
+a rejection (a D2-only template refusing a D1 grade) and an acceptance
+(a P2/P3/P4 template accepting P3).
+
+## Password reset
+
+`/forgot-password` (always responds the same way regardless of whether the
+email matched an account, to avoid confirming which emails are registered)
+calls `supabase.auth.resetPasswordForEmail()`; the emailed link lands on
+`/reset-password?code=...`. The PKCE code exchange
+(`supabase.auth.exchangeCodeForSession(code)`) happens in `middleware.ts`,
+not in the page's Server Component body — cookie mutation only works in
+middleware/Server Actions, not in a render body, so doing it in the page
+would silently fail to persist the session. Middleware also gained an
+`isPublicRoute` concept (login + forgot-password + reset-password) distinct
+from `isAuthRoute` (login only): unauthenticated visitors need through to
+the reset routes, but only an already-authenticated visit to `/login`
+should redirect away — a logged-in user can still visit `/reset-password`
+to proactively change their password.
+
 ## Known simplifications vs. the spec
 
 - **Grant expiry mid-session**: hard cutoff, by design (confirmed) — RLS
@@ -328,7 +402,11 @@ I still can't run a live authenticated *browser* walkthrough from this
 environment — outbound HTTPS to the Supabase project host isn't in this
 sandbox's network allowlist (only the Supabase MCP channel is) — so please
 do one end-to-end pass from your own machine or a deploy preview once this
-lands.
+lands. The same restriction means `admin-create-staff`
+(`supabase/functions/admin-create-staff`) could only be verified by
+re-reading its deployed content back via the Supabase MCP channel
+(`get_edge_function`), not by actually invoking it over HTTP — do one real
+account-creation pass before relying on it in production.
 
 ## Regenerating types
 

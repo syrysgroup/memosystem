@@ -33,6 +33,17 @@ export async function getOrgUnits(currentOnly = true) {
   return data;
 }
 
+export async function getPositionTypes() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("position_types")
+    .select("*")
+    .is("effective_to", null)
+    .order("title");
+  if (error) throw error;
+  return data;
+}
+
 export async function getDocumentTypes() {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -97,6 +108,16 @@ export async function getAttachmentUrl(storagePath: string) {
   const supabase = await createClient();
   const { data, error } = await supabase.storage
     .from("document-attachments")
+    .createSignedUrl(storagePath, 60 * 10);
+  if (error) return null;
+  return data.signedUrl;
+}
+
+export async function getAvatarUrl(storagePath: string | null) {
+  if (!storagePath) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.storage
+    .from("profile-photos")
     .createSignedUrl(storagePath, 60 * 10);
   if (error) return null;
   return data.signedUrl;

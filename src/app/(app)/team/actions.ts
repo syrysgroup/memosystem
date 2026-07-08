@@ -9,13 +9,68 @@ export async function createPosition(formData: FormData) {
   const orgUnitId = String(formData.get("org_unit_id") ?? "");
   const profileId = String(formData.get("profile_id") ?? "");
   const role = String(formData.get("role") ?? "") as PositionRole;
+  const positionTypeId = String(formData.get("position_type_id") ?? "") || null;
+  const grade = String(formData.get("grade") ?? "").trim() || null;
   if (!orgUnitId || !profileId || !role) throw new Error("Office, person, and role are required");
 
   const supabase = await createClient();
-  const { error } = await supabase.from("positions").insert({ org_unit_id: orgUnitId, profile_id: profileId, role });
+  const { error } = await supabase.from("positions").insert({
+    org_unit_id: orgUnitId,
+    profile_id: profileId,
+    role,
+    position_type_id: positionTypeId,
+    grade,
+  });
   if (error) throw error;
 
   revalidatePath("/team");
+}
+
+export type CreateStaffAccountState = {
+  error: string | null;
+  tempPassword: string | null;
+};
+
+export async function createStaffAccount(
+  _prevState: CreateStaffAccountState,
+  formData: FormData
+): Promise<CreateStaffAccountState> {
+  const email = String(formData.get("email") ?? "").trim();
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const orgUnitId = String(formData.get("org_unit_id") ?? "");
+  const role = String(formData.get("role") ?? "");
+  const positionTypeId = String(formData.get("position_type_id") ?? "") || null;
+  const grade = String(formData.get("grade") ?? "").trim() || null;
+
+  if (!email || !fullName || !orgUnitId || !role) {
+    return { error: "Email, name, office, and role are required", tempPassword: null };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.functions.invoke("admin-create-staff", {
+    body: {
+      email,
+      full_name: fullName,
+      org_unit_id: orgUnitId,
+      role,
+      position_type_id: positionTypeId,
+      grade,
+    },
+  });
+
+  if (error) {
+    return { error: error.message || "Failed to create staff account", tempPassword: null };
+  }
+  if (data?.error) {
+    return { error: String(data.error), tempPassword: null };
+  }
+
+  revalidatePath("/team");
+  revalidatePath("/directory");
+  return {
+    error: data?.warning ? String(data.warning) : null,
+    tempPassword: data?.temp_password ? String(data.temp_password) : null,
+  };
 }
 
 export async function endPosition(formData: FormData) {
