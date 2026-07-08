@@ -56,9 +56,28 @@ export type OrgUnit = {
   unit_type: OrgUnitType;
   name: string;
   is_registry: boolean;
+  // Distinguishes structure that was deliberately designed in-system from
+  // structure seeded from an external source (e.g. a scanned organogram)
+  // pending confirmation. Null for rows with no recorded provenance.
+  source: string | null;
   effective_from: string;
   effective_to: string | null;
   superseded_by_id: string | null;
+  created_at: string;
+};
+
+export type PositionType = {
+  id: string;
+  org_unit_id: string;
+  title: string;
+  // Full grade range as shown on the source ("P2"/"P3"/"P4"), not yet
+  // narrowed to one incumbent's actual grade. Empty for offices with no
+  // formal grade code (e.g. an elected/political office).
+  grade_band: string[];
+  slot_count: number;
+  source: string | null;
+  effective_from: string;
+  effective_to: string | null;
   created_at: string;
 };
 
@@ -77,6 +96,11 @@ export type Position = {
   profile_id: string;
   role: PositionRole;
   named_role: string | null;
+  // The specific establishment post this incumbent fills, and the one grade
+  // (out of that post's grade_band) they were actually assigned -- both
+  // independent of `role`/`named_role`, which drive permission scoping.
+  position_type_id: string | null;
+  grade: string | null;
   start_date: string;
   end_date: string | null;
   created_at: string;

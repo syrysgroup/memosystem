@@ -157,22 +157,40 @@ Office of the Honourable Speaker
       └─ Library, Documentation & Research Division
 ```
 
-Two things worth knowing before treating this as final:
+Things worth knowing before treating this as final:
 
-- **Depth**: `positions` is Role + Person + OrgUnit with no grade/job-title
-  field, so the individual named posts on the source chart (e.g. "13
-  Committee Clerks, P2/P3/P4", "11 Drivers, G1/G2/G3") aren't modelled as
-  separate `org_units` — those are staff establishment slots within a
-  Division, to be added as real `positions` once people are assigned to
-  them. Only the boxes that are themselves organizational units (each a
-  potential document custodian) became `org_units`.
+- **Provenance**: every `org_units` row from this seed carries a `source`
+  string — literally noting it was seeded from four scanned organogram
+  images, pending HR confirmation. This is the only way a future query can
+  tell "designed in-system" apart from "seeded from a photo nobody
+  re-verified." Two specific inferences are flagged in that field, not left
+  implicit: the parent links for **Office of the Secretary-General**,
+  **Directorate of Administration & Finance**, and **Directorate of
+  Parliamentary Affairs & Research** are each identified with a node in the
+  Speaker overview chart by matching title + grade across two separate
+  images — none of the three detail charts draws a line back to its parent
+  within its own image — and **Communication Division** supersedes three
+  earlier demo-only units that don't appear anywhere on the real chart.
+- **Position depth, without pre-filling blanks**: every named post on the
+  source charts — whether it shows one grade or a slash-separated range
+  like "P2/P3/P4" — is a `position_types` row (`org_unit_id`, `title`,
+  `grade_band`, `slot_count`, `source`), not a separate `org_unit`. Multi-
+  slot roles ("13 Committee Clerks", "11 Drivers") are templates with
+  `slot_count > 1`, never pre-created as N empty `positions` rows with
+  nobody accountable behind them. An actual incumbent gets their own
+  `positions` row referencing the template (`position_type_id`) with one
+  specific `grade` chosen from the template's band — enforced by a trigger,
+  not just an app-level check. 74 templates (113 total slots) came out of
+  the four charts this way; `role`/`named_role` (which drive permission
+  scoping) are untouched and independent of this.
 - **Registry assumption**: nothing on the source chart is literally labeled
   "Registry," but the system requires exactly one unit flagged `is_registry`
   for incoming/outgoing external correspondence to be logged at all
   (enforced at the trigger level — see "Registry" below). **General Admin &
   Conference Division** was picked as the closest functional match and
-  flagged provisionally; this is a one-column `UPDATE`, not a structural
-  change, so it's easy to move once HR confirms or reassigns it.
+  flagged provisionally, noted in its `source` field; this is a one-column
+  `UPDATE`, not a structural change, so it's easy to move once HR confirms
+  or reassigns it.
 
 The old demo-only units (Directorate of Communication, Corporate
 Communication Division, Press & Media Office, Office of the President,
